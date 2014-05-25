@@ -2151,7 +2151,7 @@ int vtkCGNSReader::GetUnstructuredZone ( int fn, int  base, int zone,
   numCoreCells = 0; // force initialize
   for ( int sec = 1; sec <= nsections; ++sec )
     {
-    char sectionname[33];
+    CGNSRead::char_33 sectionname;
     CGNS_ENUMT(ElementType_t) elemtype = CGNS_ENUMV(ElementTypeNull);
     cgsize_t start = 1, end = 1;
     cgsize_t elementSize = 0;
@@ -2273,7 +2273,7 @@ int vtkCGNSReader::GetUnstructuredZone ( int fn, int  base, int zone,
   for ( std::vector<int>::iterator it = coreSec.begin() ; it != coreSec.end(); ++it )
     {
     int sec = *it;
-    char sectionname[33];
+    CGNSRead::char_33 sectionname;
     CGNS_ENUMT(ElementType_t) elemtype = CGNS_ENUMV(ElementTypeNull);
     cgsize_t start = 1, end = 1;
     cgsize_t elementSize = 0;
@@ -2956,7 +2956,7 @@ int vtkCGNSReader::GetUnstructuredZone ( int fn, int  base, int zone,
     for ( std::vector<int>::iterator it = bndSec.begin() ; it != bndSec.end(); ++it )
       {
       int sec = *it;
-      char sectionname[33];
+      CGNSRead::char_33 sectionname;
       CGNS_ENUMT ( ElementType_t ) elemtype = CGNS_ENUMV(ElementTypeNull);
       cgsize_t start = 1, end = 1;
       cgsize_t elementSize = 0;
