@@ -158,17 +158,15 @@ private:
   vtkCGNSReader(const vtkCGNSReader&);  // Not implemented.
   void operator=(const vtkCGNSReader&);  // Not implemented.
 
-
-
   CGNSRead::vtkCGNSMetaData Internal;  // Metadata
 
   char *FileName; // cgns file name
   int LoadBndPatch; // option to set section loading for unstructured grid
 
   // for internal cgio calls (low level IO)
-  int cgio_desc;
-  double rootid;
-  double currentid;
+  int cgioNum;
+  double rootId;
+  double currentId;
   //
   unsigned int NumberOfBases;
   int ActualTimeStep;

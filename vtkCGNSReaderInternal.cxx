@@ -574,7 +574,7 @@ int readSolInfo(int cgioNum, double nodeId,
 
       // read node data type
       CGNSRead::char_33 dataType;
-      if ( cgio_get_data_type ( cgioNum , solChildId[nn], dataType ) )
+      if (cgio_get_data_type(cgioNum , solChildId[nn], dataType))
         {
         continue;
         }
