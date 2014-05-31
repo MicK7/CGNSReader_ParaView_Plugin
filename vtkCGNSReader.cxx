@@ -861,7 +861,7 @@ int vtkCGNSReader::GetCurvilinearZone ( int fn, int  base, int zone,
           vtkErrorMacro ( << "Buffer array cgio_read_data :" << message );
           break;
           }
-        for (vtkIdType ii = 0; ii < nPts; ii++ )
+        for (vtkIdType ii = 0; ii < nPts; ii++)
           {
           currentCoord[memStride[0]*ii] = static_cast<float>(dataArray[ii]);
           }
@@ -1089,7 +1089,7 @@ int vtkCGNSReader::GetCurvilinearZone ( int fn, int  base, int zone,
           }
 
         arr->SetName(iter->name);
-        arr->SetNumberOfComponents (physicalDim);
+        arr->SetNumberOfComponents(physicalDim);
         arr->SetNumberOfTuples(nVals);
 
         for (int dim = 0; dim < physicalDim; ++dim)
@@ -2140,6 +2140,7 @@ int vtkCGNSReader::GetUnstructuredZone ( int fn, int  base, int zone,
       }
     }
   cgio_release_id(this->cgioNum, gridId);
+  this->UpdateProgress(0.2);
   // points are now loaded
   //----------------------
   // Read the number of sections, for the zone.
@@ -2363,7 +2364,7 @@ int vtkCGNSReader::GetUnstructuredZone ( int fn, int  base, int zone,
         }
       //========================================================================
 
-      if ( eDataSize != numPointsPerCell*elementSize )
+      if (eDataSize != numPointsPerCell*elementSize)
         {
         vtkErrorMacro(<< "FATAL wrong elements dimensions\n");
         }
@@ -2371,7 +2372,7 @@ int vtkCGNSReader::GetUnstructuredZone ( int fn, int  base, int zone,
       // strided_read not fully efficient !!
       // because it cannot skip points ... for the time being
       // pointer on start !!
-      vtkIdType* localElements = & ( elements[ startArraySec[sec-1] ] );
+      vtkIdType* localElements = &(elements[startArraySec[sec-1]]);
 
       if (cg_goto(fn, base, "Zone_t", zone, "Elements_t" , sec ,"end") != CG_OK)
         {
@@ -3629,10 +3630,10 @@ int vtkCGNSReader::RequestData ( vtkInformation *vtkNotUsed ( request ),
   for (int base = 1; base <= nbases ; ++base)
     {
     CGNSRead::char_33 baseName;
-    int cell_dim = 0;
-    int phys_dim = 0;
+    int cellDim = 0;
+    int physicalDim = 0;
 
-    ier = cg_base_read(fn, base, baseName, &cell_dim, &phys_dim);
+    ier = cg_base_read(fn, base, baseName, &cellDim, &physicalDim);
     if ( ier  != CG_OK )
       {
       vtkErrorMacro ("" << "Error reading base number " << base);
@@ -3696,46 +3697,47 @@ int vtkCGNSReader::RequestData ( vtkInformation *vtkNotUsed ( request ),
       continue;
       }
     vtkMultiBlockDataSet* mbase = vtkMultiBlockDataSet::New();
-    rootNode->GetMetaData ( blockIndex )->Set ( vtkCompositeDataSet::NAME(),
-                                                baseName );
+    rootNode->GetMetaData(blockIndex)->Set(vtkCompositeDataSet::NAME(),
+                                           baseName);
 
     cg_nzones ( fn, base, &nzones );
-    if ( nzones == 0 )
+    if (nzones == 0)
       {
-      vtkWarningMacro ( "" << "No zones in base " << baseName );
+      vtkWarningMacro("" << "No zones in base " << baseName);
       }
     else
       {
-      mbase->SetNumberOfBlocks ( nzones );
+      mbase->SetNumberOfBlocks (nzones);
       }
 
 #ifdef PARAVIEW_USE_MPI
     int zonemin = baseToZoneRange[base-1][0]+1;
     int zonemax = baseToZoneRange[base-1][1];
-    for ( int zone=zonemin; zone <= zonemax; ++zone )
+    for (int zone = zonemin; zone <= zonemax; ++zone)
       {
 #else
-    for ( int zone=1; zone <= nzones; ++zone )
+    for (int zone=1; zone <= nzones; ++zone)
       {
 #endif
-      CGNSRead::char_33 zonename;
+      CGNSRead::char_33 zoneName;
       cgsize_t zsize[9];
       CGNS_ENUMT(ZoneType_t) zt = CGNS_ENUMV(ZoneTypeNull);
-      memset ( zonename, 0, 33 );
-      memset ( zsize, 0, 9*sizeof ( cgsize_t ) );
+      memset(zoneName, 0, 33);
+      memset(zsize, 0, 9*sizeof(cgsize_t));
 
-      ier = cg_zone_read ( fn, base, zone , zonename, zsize );
+      ier = cg_zone_read(fn, base, zone , zoneName, zsize);
       if ( ier != CG_OK )
         {
-        vtkErrorMacro ( << "Problem while reading zone number " << zone );
+        vtkErrorMacro(<< "Problem while reading zone number " << zone);
         }
 
-      mbase->GetMetaData(zone - 1)->Set(vtkCompositeDataSet::NAME(), zonename);
+      mbase->GetMetaData(zone - 1)->Set(vtkCompositeDataSet::NAME(), zoneName);
 
       char * FamilyName = NULL;
       if ( cg_famname_read(FamilyName) == CG_OK )
         {
-        vtkInformationStringKey* zonefamily = new vtkInformationStringKey("FAMILY","vtkCompositeDataSet");
+        vtkInformationStringKey* zonefamily =
+                    new vtkInformationStringKey("FAMILY","vtkCompositeDataSet");
         mbase->GetMetaData(zone-1)->Set(zonefamily, FamilyName);
         }
 
@@ -3745,7 +3747,7 @@ int vtkCGNSReader::RequestData ( vtkInformation *vtkNotUsed ( request ),
       pathTozone[1] = '\0';
       strcat ( pathTozone,baseName );
       strcat ( pathTozone,"/" );
-      strcat ( pathTozone,zonename );
+      strcat ( pathTozone,zoneName );
       cgio_get_node_id(this->cgioNum, this->rootId, pathTozone,
                        &(this->currentId));
 
@@ -3758,15 +3760,20 @@ int vtkCGNSReader::RequestData ( vtkInformation *vtkNotUsed ( request ),
           break;
         case CGNS_ENUMV(Structured):
           {
-          GetCurvilinearZone(fn, base,zone, cell_dim, phys_dim, zsize, mbase);
+          GetCurvilinearZone(fn, base, zone, cellDim, physicalDim, zsize, mbase);
           break;
           }
         case CGNS_ENUMV(Unstructured):
-          GetUnstructuredZone(fn, base,zone, cell_dim, phys_dim, zsize, mbase);
+          GetUnstructuredZone(fn, base, zone, cellDim, physicalDim, zsize, mbase);
           break;
         }
+
+      if (zone % 5 == 0)
+        {
+        this->UpdateProgress(0.5);
+        }
       }
-    rootNode->SetBlock ( blockIndex, mbase );
+    rootNode->SetBlock(blockIndex, mbase);
     mbase->Delete();
     blockIndex++;
     }
@@ -3776,7 +3783,7 @@ errorData:
   cg_close ( fn );
   fn = 0;
 
-  this->UpdateProgress ( 1.0 );
+  this->UpdateProgress(1.0);
   return 1;
 }
 
@@ -3894,7 +3901,6 @@ void vtkCGNSReader::PrintSelf ( ostream& os, vtkIndent indent )
 
   os << indent << "File Name: "
      << ( this->FileName ? this->FileName : "(none)" ) << "\n";
-
 }
 
 //------------------------------------------------------------------------------
@@ -4006,7 +4012,7 @@ CanReadError:
 }
 
 //------------------------------------------------------------------------------
-int vtkCGNSReader::FillOutputPortInformation(int vtkNotUsed (port),
+int vtkCGNSReader::FillOutputPortInformation(int vtkNotUsed(port),
                                              vtkInformation *info )
 {
   info->Set(vtkDataObject::DATA_TYPE_NAME(), "vtkMultiBlockDataSet");
@@ -4038,21 +4044,29 @@ int vtkCGNSReader::GetBaseArrayStatus(const char* name)
 }
 
 //----------------------------------------------------------------------------
-void vtkCGNSReader::SetBaseArrayStatus ( const char* name, int status )
+void vtkCGNSReader::SetBaseArrayStatus(const char* name, int status)
 {
   if (status)
+    {
     this->BaseSelection->EnableArray(name);
+    }
   else
+    {
     this->BaseSelection->DisableArray(name);
+    }
 }
 
 //----------------------------------------------------------------------------
-const char* vtkCGNSReader::GetBaseArrayName ( int index )
+const char* vtkCGNSReader::GetBaseArrayName(int index)
 {
   if (index >= (int) this->NumberOfBases || index < 0)
+    {
     return NULL;
+    }
   else
+    {
     return this->BaseSelection->GetArrayName(index);
+    }
 }
 
 //----------------------------------------------------------------------------
@@ -4074,30 +4088,36 @@ int vtkCGNSReader::GetNumberOfPointArrays()
   return this->PointDataArraySelection->GetNumberOfArrays();
 }
 
-
 //----------------------------------------------------------------------------
-const char* vtkCGNSReader::GetPointArrayName ( int index )
+const char* vtkCGNSReader::GetPointArrayName(int index)
 {
-  if ( index >= ( int ) this->GetNumberOfPointArrays() || index < 0 )
+  if (index >= (int)this->GetNumberOfPointArrays() || index < 0)
+    {
     return NULL;
+    }
   else
-    return this->PointDataArraySelection->GetArrayName ( index );
+    {
+    return this->PointDataArraySelection->GetArrayName(index);
+    }
 }
 
 //----------------------------------------------------------------------------
-int vtkCGNSReader::GetPointArrayStatus ( const char* name )
+int vtkCGNSReader::GetPointArrayStatus(const char* name)
 {
-  return this->PointDataArraySelection->ArrayIsEnabled ( name );
+  return this->PointDataArraySelection->ArrayIsEnabled(name);
 }
 
-
 //----------------------------------------------------------------------------
-void vtkCGNSReader::SetPointArrayStatus ( const char* name, int status )
+void vtkCGNSReader::SetPointArrayStatus(const char* name, int status)
 {
-  if ( status )
-    this->PointDataArraySelection->EnableArray ( name );
+  if (status)
+    {
+    this->PointDataArraySelection->EnableArray(name);
+    }
   else
-    this->PointDataArraySelection->DisableArray ( name );
+    {
+    this->PointDataArraySelection->DisableArray(name);
+    }
 }
 
 //----------------------------------------------------------------------------
@@ -4119,41 +4139,49 @@ int vtkCGNSReader::GetNumberOfCellArrays()
 }
 
 //----------------------------------------------------------------------------
-const char* vtkCGNSReader::GetCellArrayName ( int index )
+const char* vtkCGNSReader::GetCellArrayName(int index)
 {
-  if ( index >= ( int ) this->GetNumberOfCellArrays() || index < 0 )
+  if (index >= (int) this->GetNumberOfCellArrays() || index < 0)
+    {
     return NULL;
+    }
   else
-    return this->CellDataArraySelection->GetArrayName ( index );
+    {
+    return this->CellDataArraySelection->GetArrayName(index);
+    }
 }
 
 //----------------------------------------------------------------------------
-int vtkCGNSReader::GetCellArrayStatus ( const char* name )
+int vtkCGNSReader::GetCellArrayStatus(const char* name)
 {
-  return this->CellDataArraySelection->ArrayIsEnabled ( name );
+  return this->CellDataArraySelection->ArrayIsEnabled(name);
 }
 
 //----------------------------------------------------------------------------
-void vtkCGNSReader::SetCellArrayStatus ( const char* name, int status )
+void vtkCGNSReader::SetCellArrayStatus(const char* name, int status)
 {
-  if ( status )
-    this->CellDataArraySelection->EnableArray ( name );
+  if (status)
+    {
+    this->CellDataArraySelection->EnableArray(name);
+    }
   else
-    this->CellDataArraySelection->DisableArray ( name );
+    {
+    this->CellDataArraySelection->DisableArray(name);
+    }
 }
 
 //----------------------------------------------------------------------------
-void vtkCGNSReader::SelectionModifiedCallback ( vtkObject*, unsigned long,
-                                                void* clientdata, void* )
+void vtkCGNSReader::SelectionModifiedCallback(vtkObject*, unsigned long,
+                                              void* clientdata, void* )
 {
   static_cast<vtkCGNSReader*>(clientdata)->Modified();
 }
 
 #ifdef PARAVIEW_USE_MPI
 //------------------------------------------------------------------------------
-void vtkCGNSReader::Broadcast( vtkMultiProcessController* ctrl )
+void vtkCGNSReader::Broadcast(vtkMultiProcessController* ctrl)
 {
-  if ( ctrl )
+  if (ctrl)
     {
     int rank = ctrl->GetLocalProcessId();
     this->Internal.Broadcast(ctrl, rank);
