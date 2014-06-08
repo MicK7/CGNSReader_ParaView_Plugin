@@ -89,10 +89,10 @@ int GetVTKElemType (CGNS_ENUMT(ElementType_t) elemtype, bool &higherOrderWarning
       cell_type = VTK_QUADRATIC_EDGE;
       higherOrderWarning = true;
       break;
-    case CGNS_ENUMV(BAR_4):
-      cell_type = VTK_CUBIC_LINE;
-      higherOrderWarning = true;
-      break;
+    //case CGNS_ENUMV(BAR_4):
+    //  cell_type = VTK_CUBIC_LINE;
+    //  higherOrderWarning = true;
+    //  break;
     case CGNS_ENUMV(TRI_3):
       cell_type = VTK_TRIANGLE;
       break;
