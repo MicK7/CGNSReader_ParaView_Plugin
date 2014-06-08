@@ -53,6 +53,7 @@
 #include <map>
 #include <string>
 
+#include <typeinfo>
 #include <tr1/array>
 
 #include <vtksys/SystemTools.hxx>
@@ -404,6 +405,36 @@ void CGNS2VTKorderMonoElem(const vtkIdType size, const int cell_type,
 
 }
 
+int getNodeChildrenId(int cgioNum, double fatherId,
+                          std::vector<double>& childrenIds)
+{
+  int nchildren;
+  int len;
+
+  cgio_number_children(cgioNum, fatherId, &nchildren);
+
+  childrenIds.resize(nchildren);
+  double *idList = new double[nchildren];
+
+  cgio_children_ids(cgioNum, fatherId, 1, nchildren, &len, idList);
+
+  if (len != nchildren)
+    {
+    delete[] idList;
+    std::cerr << "Mismatch in number of children and child IDs read"
+              << std::endl;
+    return 1;
+    }
+
+  for (int child = 0; child < nchildren; child++)
+    {
+    childrenIds[child] = idList[child];
+    }
+
+  delete [] idList;
+  return 0;
+}
+
 //----------------------------------------------------------------------------
 vtkCGNSReader::vtkCGNSReader()
 {
@@ -700,6 +731,45 @@ int vtkCGNSReader::GetCurvilinearZone ( int fn, int  base, int zone,
   double coordId;
   cgio_get_node_id ( this->cgioNum, this->currentId, GridCoordName, &gridId );
 
+  std::vector<double> gridChildId;
+  getNodeChildrenId(this->cgioNum, gridId, gridChildId);
+
+  char nodeLabel[CGIO_MAX_NAME_LENGTH+1];
+  size_t nCoordsArray = 0;
+  size_t na;
+
+  for (nCoordsArray = 0, na = 0; na < gridChildId.size(); ++na)
+    {
+    if (cgio_get_label(cgioNum, gridChildId[na], nodeLabel) != CG_OK)
+      {
+      vtkErrorMacro(<< "Not enough coordinates in node "
+                    << GridCoordName << "\n");
+      continue;
+      }
+
+    if (strcmp(nodeLabel, "DataArray_t") == 0)
+      {
+      if (nCoordsArray < na)
+        {
+        gridChildId[nCoordsArray] = gridChildId[na];
+        }
+      nCoordsArray++;
+      }
+    else if (strcmp(nodeLabel, "Rind_t") == 0)
+      {
+      //setUpRind(rind);
+      }
+    else
+      {
+      cgio_release_id(cgioNum, gridChildId[na]);
+      }
+    }
+  if ( nCoordsArray < physicalDim)
+    {
+    vtkErrorMacro(<< "Not enough coordinates in node "
+                  << GridCoordName << "\n");
+    return 1;
+    }
   //
   // Populate the coordinates.  Put in 3D points with z=0 if the mesh is 2D.
   //
@@ -711,16 +781,43 @@ int vtkCGNSReader::GetCurvilinearZone ( int fn, int  base, int zone,
     CGNSRead::char_33 coordName;
     size_t len;
     CGNS_ENUMT(DataType_t) ct;
+    bool sameType = true;
 
     memset(coords, 0, 3*nPts*sizeof(double));
 
     for (int c = 1; c <= ncoords; ++c)
       {
-      if (cg_coord_info ( fn, base, zone, c, &ct, coordName ) != CG_OK)
+      // Read CoordName
+      if ( cgio_get_name(this->cgioNum, gridChildId[c-1], coordName) != CG_OK )
         {
-        vtkErrorMacro( << cg_get_error() );
-        break;
+        char message[81];
+        cgio_error_message ( message );
+        vtkErrorMacro ( << "cgio_get_name :" << message );
         }
+
+      // Read node data type
+      CGNSRead::char_33 dataType;
+      if (cgio_get_data_type(this->cgioNum , gridChildId[c-1], dataType))
+        {
+        continue;
+        }
+
+      if (strcmp(dataType, "R8") == 0)
+        {
+        ct = CGNS_ENUMV(RealDouble);
+        sameType = (typeid(double) == typeid(double));
+        }
+      else if (strcmp(dataType, "R4") == 0)
+        {
+        ct = CGNS_ENUMV(RealSingle);
+        sameType = (typeid(float) == typeid(double));
+        }
+      else
+        {
+        vtkErrorMacro(<< "Invalid datatype for GridCoordinates\n");
+        continue;
+        }
+
       // Determine direction X,Y,Z
       len = strlen ( coordName ) - 1;
       switch ( coordName[len] )
@@ -736,10 +833,11 @@ int vtkCGNSReader::GetCurvilinearZone ( int fn, int  base, int zone,
           break;
         }
 
-      cgio_get_node_id ( this->cgioNum, gridId, coordName, &coordId );
+      coordId = gridChildId[c-1];
+      //cgio_get_node_id ( this->cgioNum, gridId, coordName, &coordId );
 
       // quick transfer of data if same data types
-      if (ct == CGNS_ENUMV(RealDouble))
+      if (sameType == true)
         {
         if ( cgio_read_data(this->cgioNum, coordId,
                             srcStart, srcEnd, srcStride, cellDim , memEnd,
@@ -754,12 +852,6 @@ int vtkCGNSReader::GetCurvilinearZone ( int fn, int  base, int zone,
         {
         float *dataArray = 0;
         const cgsize_t memNoStride[3] = {1,1,1};
-
-        if ( ct != CGNS_ENUMV(RealSingle) )
-          {
-          vtkErrorMacro( << "Invalid datatype for GridCoordinates\n" );
-          break;
-          }
 
         // need to read into temp array to convert data
         dataArray = new float[nPts];
@@ -799,11 +891,36 @@ int vtkCGNSReader::GetCurvilinearZone ( int fn, int  base, int zone,
 
     for (int c = 1; c <= ncoords; ++c)
       {
-      if ( cg_coord_info ( fn, base, zone, c, &ct, coordName ) != CG_OK)
+
+      // Read CoordName
+      if ( cgio_get_name(this->cgioNum, gridChildId[c-1], coordName) != CG_OK )
         {
-        vtkErrorMacro( << cg_get_error() );
-        break;
+        char message[81];
+        cgio_error_message ( message );
+        vtkErrorMacro ( << "cgio_get_name :" << message );
         }
+
+      // Read node data type
+      CGNSRead::char_33 dataType;
+      if (cgio_get_data_type(cgioNum , gridChildId[c-1], dataType))
+        {
+        continue;
+        }
+
+      if (strcmp(dataType, "R8") == 0)
+        {
+        ct = CGNS_ENUMV(RealDouble);
+        }
+      else if (strcmp(dataType, "R4") == 0)
+        {
+        ct = CGNS_ENUMV(RealSingle);
+        }
+      else
+        {
+        vtkErrorMacro( << "Invalid datatype for GridCoordinates\n" );
+        continue;
+        }
+
       // Determine direction X,Y,Z
       len = strlen ( coordName ) - 1;
       switch ( coordName[len] )
@@ -819,7 +936,8 @@ int vtkCGNSReader::GetCurvilinearZone ( int fn, int  base, int zone,
           break;
         }
 
-      cgio_get_node_id ( this->cgioNum, gridId, coordName, &coordId );
+      coordId = gridChildId[c-1];
+      //cgio_get_node_id ( this->cgioNum, gridId, coordName, &coordId );
 
       // quick transfer of data if same data types
       if (ct == CGNS_ENUMV(RealSingle))
