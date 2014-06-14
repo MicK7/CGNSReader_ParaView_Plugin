@@ -13,8 +13,6 @@ ENDIF(NOT CGNS_FOUND)
 #
 include_directories(${CGNS_INCLUDE_DIR})
 
-
-
 SET_SOURCE_FILES_PROPERTIES(
 vtkCGNSReaderInternal
 
@@ -28,7 +26,6 @@ INCLUDE_DIRECTORIES(${VTK_INCLUDE_DIRS})
 IF(PARAVIEW_BUILD_QT_GUI)
   INCLUDE(${QT_USE_FILE})
 ENDIF(PARAVIEW_BUILD_QT_GUI)
-
 
 # -----------------------------------------------------------------------------
 # Disable some warnings
@@ -89,9 +86,15 @@ ELSE (PARAVIEW_BUILD_QT_GUI)
     SERVER_MANAGER_SOURCES ${SOURCES})
 ENDIF (PARAVIEW_BUILD_QT_GUI)
 
-target_link_libraries(CGNSReader LINK_PUBLIC ${CGNS_LIBRARIES} -lhdf5)
 
-#target_link_libraries(CGNSReader LINK_PUBLIC -lhdf5)
+SET( CGNS_LINK_TO_HDF5 ON CACHE BOOL "use -lhdf5 for linking cgns to hdf5" )
+MARK_AS_ADVANCED( CGNS_LINK_TO_HDF5 )
+
+IF ( CGNS_LINK_TO_HDF5 )
+  target_link_libraries(CGNSReader LINK_PRIVATE ${CGNS_LIBRARIES} -lhdf5)
+ELSE (CGNS_LINK_TO_HDF5 )
+  target_link_libraries(CGNSReader LINK_PRIVATE ${CGNS_LIBRARIES})
+ENDIF ( CGNS_LINK_TO_HDF5 )
 
 # Add testing if necessary
 # IF (BUILD_TESTING)
