@@ -3658,20 +3658,20 @@ int vtkCGNSReader::RequestData ( vtkInformation *vtkNotUsed ( request ),
     this->ActualTimeStep = 0;
     bool skipBase = false;
 
-    if ( outInfo->Has ( vtkStreamingDemandDrivenPipeline::UPDATE_TIME_STEP() ) )
+    if ( outInfo->Has ( vtkDataObject::DATA_TIME_STEP() ) )
       {
 
       // Get the requested time step. We only support requests of a single time
       // step in this reader right now
       double requestedTimeValue =
-          outInfo->Get ( vtkStreamingDemandDrivenPipeline::UPDATE_TIME_STEP() );
+          outInfo->Get ( vtkDataObject::DATA_TIME_STEP() );
 
       vtkDebugMacro ( << "RequestData: requested time value: "
                       << requestedTimeValue );
 
-      // Clamp requestedTimeValue to available time range.
-      if ( ( requestedTimeValue < this->Internal.GetTimes().front() ) ||
-           ( requestedTimeValue > this->Internal.GetTimes().back() ))
+      // Check if requestedTimeValue is available in base time range.
+      if ( ( requestedTimeValue < curBaseInfo.times.front() ) ||
+           ( requestedTimeValue > curBaseInfo.times.back() ))
         {
         skipBase = true;
         requestedTimeValue = this->Internal.GetTimes().front();
