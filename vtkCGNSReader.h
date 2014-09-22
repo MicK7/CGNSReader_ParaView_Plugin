@@ -154,6 +154,32 @@ protected:
                     const CGNSRead::char_33 name);
   //ETX
 
+  int getGridAndSolutionName(int base,
+                             CGNSRead::char_33 GridCoordName, CGNSRead::char_33 SolutionName,
+                             bool& readGridCoordName, bool& readSolutionName);
+  
+  int getCoordsIdAndFillRind(const CGNSRead::char_33 GridCoordName,
+                             const int physicalDim, size_t& nCoordsArray,
+                             std::vector<double>& gridChildId, int* rind);
+  
+  //BTX
+  int getVarsIdAndFillRind ( const double cgioSolId,
+                           size_t& nVarArray, CGNS_ENUMT(GridLocation_t)& varCentering,
+                           std::vector<double>& solChildId, int* rind );
+  //ETX
+  
+  int fillArrayInformation ( const std::vector<double>& solChildId,
+                       const int physicalDim,
+                       std::vector< CGNSRead::CGNSVariable >& cgnsVars,
+                       std::vector< CGNSRead::CGNSVector >& cgnsVectors );
+  //BTX
+  int AllocateVtkArray ( const int physicalDim, const vtkIdType nVals,
+                       const CGNS_ENUMT ( GridLocation_t ) varCentering,
+                       const std::vector< CGNSRead::CGNSVariable >& cgnsVars,
+                       const std::vector< CGNSRead::CGNSVector >& cgnsVectors,
+                       std::vector<vtkDataArray *>& vtkVars );
+  //ETX
+  
 private:
   vtkCGNSReader(const vtkCGNSReader&);  // Not implemented.
   void operator=(const vtkCGNSReader&);  // Not implemented.
