@@ -179,6 +179,7 @@ protected:
                        const std::vector< CGNSRead::CGNSVector >& cgnsVectors,
                        std::vector<vtkDataArray *>& vtkVars );
   //ETX
+  int AttachReferenceValue(const int base, vtkDataSet* ds);
   
 private:
   vtkCGNSReader(const vtkCGNSReader&);  // Not implemented.

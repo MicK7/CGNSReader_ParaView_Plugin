@@ -71,7 +71,7 @@ vtkStandardNewMacro ( vtkCGNSReader );
 //------------------------------------------------------------------------------
 namespace CGNSRead
 {
-  
+
 template <typename T, typename Y>
 int get_XYZ_mesh ( const int cgioNum, const std::vector<double>& gridChildId,
                    const size_t& nCoordsArray, const int cellDim, const vtkIdType nPts,
@@ -183,8 +183,8 @@ int get_XYZ_mesh ( const int cgioNum, const std::vector<double>& gridChildId,
     }
   return 0;
 }
-  
-  
+
+
 int setUpRind ( const int cgioNum, const double rindId, int *rind )
 {
   CGNSRead::char_33 dataType;
@@ -766,10 +766,10 @@ bool vtkCGNSReader::IsVarEnabled ( CGNS_ENUMT ( GridLocation_t ) varcentering,
   return ( DataSelection->ArrayIsEnabled ( name ) != 0 );
 }
 //------------------------------------------------------------------------------
-int vtkCGNSReader::getGridAndSolutionName(const int base,
-					  CGNSRead::char_33 GridCoordName, CGNSRead::char_33 SolutionName,
-					  bool& readGridCoordName, bool& readSolutionName)
-{  
+int vtkCGNSReader::getGridAndSolutionName ( const int base,
+    CGNSRead::char_33 GridCoordName, CGNSRead::char_33 SolutionName,
+    bool& readGridCoordName, bool& readSolutionName )
+{
   //----------------------------------------------------------------------------
   // Get Coordinates and FlowSolution node names
   readGridCoordName = true;
@@ -840,14 +840,14 @@ int vtkCGNSReader::getGridAndSolutionName(const int base,
   return 0;
 }
 
-int vtkCGNSReader::getCoordsIdAndFillRind(const CGNSRead::char_33 GridCoordName,
-					  const int physicalDim, size_t& nCoordsArray,
-					  std::vector<double>& gridChildId, int* rind)
- {
+int vtkCGNSReader::getCoordsIdAndFillRind ( const CGNSRead::char_33 GridCoordName,
+    const int physicalDim, size_t& nCoordsArray,
+    std::vector<double>& gridChildId, int* rind )
+{
   char nodeLabel[CGIO_MAX_NAME_LENGTH+1];
   size_t na;
-  
-    
+
+
   nCoordsArray = 0;
   // Get GridCoordinate node ID for low level access
   double gridId;
@@ -862,7 +862,7 @@ int vtkCGNSReader::getCoordsIdAndFillRind(const CGNSRead::char_33 GridCoordName,
   // Get the number of Coordinates in GridCoordinates node
   getNodeChildrenId ( this->cgioNum, gridId, gridChildId );
 
-  for (int n = 0; n < 6; n++ )
+  for ( int n = 0; n < 6; n++ )
     {
       rind[n] = 0;
     }
@@ -886,7 +886,7 @@ int vtkCGNSReader::getCoordsIdAndFillRind(const CGNSRead::char_33 GridCoordName,
       else if ( strcmp ( nodeLabel, "Rind_t" ) == 0 )
         {
           // check for rind
-          CGNSRead::setUpRind ( this->cgioNum, gridChildId[na], rind);
+          CGNSRead::setUpRind ( this->cgioNum, gridChildId[na], rind );
         }
       else
         {
@@ -898,30 +898,30 @@ int vtkCGNSReader::getCoordsIdAndFillRind(const CGNSRead::char_33 GridCoordName,
       vtkErrorMacro ( << "Not enough coordinates in node "
                       << GridCoordName << "\n" );
       return 1;
-   }
+    }
   cgio_release_id ( this->cgioNum, gridId );
   return 0;
 }
 
 //------------------------------------------------------------------------------
 int vtkCGNSReader::getVarsIdAndFillRind ( const double cgioSolId,
-                           size_t& nVarArray, CGNS_ENUMT(GridLocation_t)& varCentering,
-                           std::vector<double>& solChildId, int* rind )
+    size_t& nVarArray, CGNS_ENUMT ( GridLocation_t ) & varCentering,
+    std::vector<double>& solChildId, int* rind )
 {
 
 
-  
+
   char nodeLabel[CGIO_MAX_NAME_LENGTH+1];
   size_t na;
 
   nVarArray = 0;
-  for (int n = 0; n < 6; ++n )
+  for ( int n = 0; n < 6; ++n )
     {
       rind[n] = 0;
     }
 
   getNodeChildrenId ( this->cgioNum, cgioSolId, solChildId );
-  
+
   for ( nVarArray = 0, na = 0; na < solChildId.size(); ++na )
     {
       if ( cgio_get_label ( cgioNum, solChildId[na], nodeLabel ) != CG_OK )
@@ -979,14 +979,14 @@ int vtkCGNSReader::getVarsIdAndFillRind ( const double cgioSolId,
           cgio_release_id ( this->cgioNum, solChildId[na] );
         }
     }
-   return 0;
+  return 0;
 }
 
 
 int vtkCGNSReader::fillArrayInformation ( const std::vector<double>& solChildId,
-                       const int physicalDim,
-                       std::vector< CGNSRead::CGNSVariable >& cgnsVars,
-                       std::vector< CGNSRead::CGNSVector >& cgnsVectors )
+    const int physicalDim,
+    std::vector< CGNSRead::CGNSVariable >& cgnsVars,
+    std::vector< CGNSRead::CGNSVector >& cgnsVectors )
 {
   // Read variable names
   for ( size_t ff = 0; ff < cgnsVars.size(); ++ff )
@@ -1028,10 +1028,10 @@ int vtkCGNSReader::fillArrayInformation ( const std::vector<double>& solChildId,
 
 //------------------------------------------------------------------------------
 int  vtkCGNSReader::AllocateVtkArray ( const int physicalDim, const vtkIdType nVals,
-                       const CGNS_ENUMT ( GridLocation_t ) varCentering,
-                       const std::vector< CGNSRead::CGNSVariable >& cgnsVars,
-                       const std::vector< CGNSRead::CGNSVector >& cgnsVectors,
-                       std::vector<vtkDataArray *>& vtkVars )
+                                       const CGNS_ENUMT ( GridLocation_t ) varCentering,
+                                       const std::vector< CGNSRead::CGNSVariable >& cgnsVars,
+                                       const std::vector< CGNSRead::CGNSVector >& cgnsVectors,
+                                       std::vector<vtkDataArray *>& vtkVars )
 {
   for ( int ff = 0; ff < cgnsVars.size(); ff++ )
     {
@@ -1114,6 +1114,22 @@ int  vtkCGNSReader::AllocateVtkArray ( const int physicalDim, const vtkIdType nV
   return 0;
 }
 
+int vtkCGNSReader::AttachReferenceValue(const int base, vtkDataSet* ds)
+{
+  // Handle Reference Values (Mach, ...)
+  const std::map< std::string, double>& arrState = this->Internal.GetBase ( base-1 ).referenceState;
+  std::map< std::string, double>::const_iterator iteRef = arrState.begin();
+  for ( iteRef = arrState.begin(); iteRef != arrState.end(); iteRef++ )
+    {
+      vtkDoubleArray* refValArray = vtkDoubleArray::New();
+      refValArray->SetNumberOfComponents ( 1 );
+      refValArray->SetName ( iteRef->first.c_str() );
+      refValArray->InsertNextValue ( iteRef->second );
+      ds->GetFieldData()->AddArray ( refValArray );
+      refValArray->Delete();
+    }
+  return 0;
+}
 
 //------------------------------------------------------------------------------
 int vtkCGNSReader::GetCurvilinearZone ( int fn, int  base, int zone,
@@ -1121,11 +1137,11 @@ int vtkCGNSReader::GetCurvilinearZone ( int fn, int  base, int zone,
                                         cgsize_t *zsize,
                                         vtkMultiBlockDataSet *mbase )
 {
- 
+
   int rind[6];
   int n;
   int ier;
- 
+
   CGNS_ENUMT ( DataType_t ) MeshType = CGNS_ENUMV ( RealDouble ) ; //TODO modify to get user/pipe preference
 
   // Source Layout
@@ -1145,14 +1161,14 @@ int vtkCGNSReader::GetCurvilinearZone ( int fn, int  base, int zone,
   bool readSolutionName = true;
   CGNSRead::char_33 GridCoordName;
   CGNSRead::char_33 SolutionName;
-  
+
   std::vector<double> gridChildId;
   size_t nCoordsArray = 0;
-  
-  this->getGridAndSolutionName(base, GridCoordName, SolutionName, readGridCoordName, readSolutionName);
 
-  this->getCoordsIdAndFillRind(GridCoordName, physicalDim, nCoordsArray, gridChildId, rind);
-  
+  this->getGridAndSolutionName ( base, GridCoordName, SolutionName, readGridCoordName, readSolutionName );
+
+  this->getCoordsIdAndFillRind ( GridCoordName, physicalDim, nCoordsArray, gridChildId, rind );
+
   // Rind was parsed or not then populate dimensions :
   // Compute structured grid coordinate range
   for ( n = 0; n < cellDim; n++ )
@@ -1173,13 +1189,13 @@ int vtkCGNSReader::GetCurvilinearZone ( int fn, int  base, int zone,
   extent[5] = memEnd[2]-1;
 
   // wacky hack ...
-  // memory aliasing is done 
+  // memory aliasing is done
   // since in vtk points array stores XYZ contiguously
   // and they are stored separatly in cgns file
   // the memory layout is set so that one cgns file array
   // will be filling every 3 chuncks in memory
-  memEnd[0] *= 3; 
-  
+  memEnd[0] *= 3;
+
   // Set up points
   vtkPoints *points  = vtkPoints::New();
   //
@@ -1199,16 +1215,16 @@ int vtkCGNSReader::GetCurvilinearZone ( int fn, int  base, int zone,
   //
   if ( MeshType == CGNS_ENUMV ( RealDouble ) ) // DOUBLE PRECISION MESHPOINTS
     {
-      CGNSRead::get_XYZ_mesh<double,float>(this->cgioNum, gridChildId, nCoordsArray, cellDim, nPts,
-                                           srcStart, srcEnd, srcStride, memStart,memEnd,memStride,memDims,
-					   points );
-      
+      CGNSRead::get_XYZ_mesh<double,float> ( this->cgioNum, gridChildId, nCoordsArray, cellDim, nPts,
+                                             srcStart, srcEnd, srcStride, memStart,memEnd,memStride,memDims,
+                                             points );
+
     }
   else  // SINGLE PRECISION MESHPOINTS
     {
-      CGNSRead::get_XYZ_mesh<float,double>(this->cgioNum, gridChildId, nCoordsArray, cellDim, nPts,
-                                           srcStart,srcEnd,srcStride, memStart,memEnd,memStride,memDims,
-					   points );
+      CGNSRead::get_XYZ_mesh<float,double> ( this->cgioNum, gridChildId, nCoordsArray, cellDim, nPts,
+                                             srcStart,srcEnd,srcStride, memStart,memEnd,memStride,memDims,
+                                             points );
     }
   //cgio_release_id ( this->cgioNum, gridId );
 
@@ -1234,32 +1250,32 @@ int vtkCGNSReader::GetCurvilinearZone ( int fn, int  base, int zone,
       else
         {
           std::vector<double> solChildId;
-          size_t nVarArray = 0;  
+          size_t nVarArray = 0;
 
-          this->getVarsIdAndFillRind(cgioSolId, nVarArray, varCentering, solChildId, rind);
-	  
+          this->getVarsIdAndFillRind ( cgioSolId, nVarArray, varCentering, solChildId, rind );
+
           vtkStructuredGrid *sgrid   = vtkStructuredGrid::New();
           sgrid->SetExtent ( extent );
           sgrid->SetPoints ( points );
-	  
+
           bool skip = false ;
-	  if ( ( varCentering != CGNS_ENUMV ( Vertex ) ) &&
+          if ( ( varCentering != CGNS_ENUMV ( Vertex ) ) &&
                ( varCentering != CGNS_ENUMV ( CellCenter ) ) )
-             {
-                  vtkWarningMacro ( << "Solution " << SolutionName
-                                    << " centering is not supported" );
-                  skip = true;
-             }
-                
-          
+            {
+              vtkWarningMacro ( << "Solution " << SolutionName
+                                << " centering is not supported" );
+              skip = true;
+            }
+
+
           if ( skip != true )
             {
-           
+
               vtkDebugMacro ( "Reading solution :" << SolutionName << "\n" );
 
               std::vector< CGNSRead::CGNSVariable > cgnsVars ( nVarArray );
               std::vector< CGNSRead::CGNSVector > cgnsVectors;
-	      this->fillArrayInformation( solChildId, physicalDim, cgnsVars, cgnsVectors);
+              this->fillArrayInformation ( solChildId, physicalDim, cgnsVars, cgnsVectors );
 
               // Source
               cgsize_t fieldSrcStart[3]  = {1,1,1};
@@ -1308,8 +1324,8 @@ int vtkCGNSReader::GetCurvilinearZone ( int fn, int  base, int zone,
               std::vector<vtkDataArray *> vtkVars ( nVarArray );
               // Count number of vars and vectors
               // Assign vars and vectors to a vtkvars array
-              this->AllocateVtkArray(physicalDim, nVals, varCentering, cgnsVars, cgnsVectors, vtkVars);
-	      
+              this->AllocateVtkArray ( physicalDim, nVals, varCentering, cgnsVars, cgnsVectors, vtkVars );
+
               // Load Data
               for ( int ff = 0; ff < nVarArray; ++ff )
                 {
@@ -1319,8 +1335,6 @@ int vtkCGNSReader::GetCurvilinearZone ( int fn, int  base, int zone,
                       continue;
                     }
                   cgioVarId = solChildId[ff];
-                  //cgio_get_node_id ( this->cgioNum, cgioSolId, cgnsVars[ff].name,
-                  //                   &cgioVarId );
 
                   // quick transfer of data because data types is given by cgns database
                   if ( cgnsVars[ff].isComponent == false )
@@ -1381,18 +1395,8 @@ int vtkCGNSReader::GetCurvilinearZone ( int fn, int  base, int zone,
                   vtkVars[nv] = 0;
                 }
             }
-          // Handle Reference Values (Mach number, ...)
-          const std::map< std::string, double>& arrState = this->Internal.GetBase ( base-1 ).referenceState ;
-          std::map< std::string, double>::const_iterator iteRef = arrState.begin();
-          for ( iteRef = arrState.begin(); iteRef != arrState.end(); iteRef++ )
-            {
-              vtkDoubleArray* refValArray = vtkDoubleArray::New();
-              refValArray->SetNumberOfComponents ( 1 );
-              refValArray->SetName ( iteRef->first.c_str() );
-              refValArray->InsertNextValue ( iteRef->second );
-              sgrid->GetFieldData()->AddArray ( refValArray );
-              refValArray->Delete();
-            }
+          //
+          this->AttachReferenceValue(base, sgrid);
           //
           mbase->SetBlock ( ( zone-1 ), sgrid );
           sgrid->Delete();
@@ -1424,14 +1428,14 @@ int vtkCGNSReader::GetCurvilinearZone ( int fn, int  base, int zone,
               CGNS_ENUMT ( GridLocation_t ) varCentering = CGNS_ENUMV ( Vertex );
               double cgioSolId = zoneChildId[nn];
               double cgioVarId;
-	      
+
               size_t nVarArray = 0;
-	      std::vector<double> solChildId;
-	      
-              cgio_get_name (this->cgioNum, zoneChildId[nn], SolutionName );
-	      
-	      this->getVarsIdAndFillRind(cgioSolId, nVarArray, varCentering, solChildId, rind);
-	                    
+              std::vector<double> solChildId;
+
+              cgio_get_name ( this->cgioNum, zoneChildId[nn], SolutionName );
+
+              this->getVarsIdAndFillRind ( cgioSolId, nVarArray, varCentering, solChildId, rind );
+
               if ( varCentering != CGNS_ENUMV ( Vertex ) )
                 {
                   pointSolution++;
@@ -1458,12 +1462,12 @@ int vtkCGNSReader::GetCurvilinearZone ( int fn, int  base, int zone,
               nosolutionread = false;
               // Read Variables
               vtkDebugMacro ( "Reading solution :" << SolutionName << "\n" );
-	      
+
               std::vector< CGNSRead::CGNSVariable > cgnsVars ( nVarArray );
               std::vector< CGNSRead::CGNSVector > cgnsVectors;
-	      
-              this->fillArrayInformation( solChildId, physicalDim, cgnsVars, cgnsVectors);
-              
+
+              this->fillArrayInformation ( solChildId, physicalDim, cgnsVars, cgnsVectors );
+
               // Source
               cgsize_t fieldSrcStart[3]  = {1,1,1};
               cgsize_t fieldSrcStride[3] = {1,1,1};
@@ -1513,7 +1517,7 @@ int vtkCGNSReader::GetCurvilinearZone ( int fn, int  base, int zone,
               // Assign vars and vectors to a vtkvars array
               std::vector<vtkDataArray *> vtkVars ( nVarArray );
 
-              this->AllocateVtkArray(physicalDim, nVals, varCentering, cgnsVars, cgnsVectors, vtkVars);
+              this->AllocateVtkArray ( physicalDim, nVals, varCentering, cgnsVars, cgnsVectors, vtkVars );
 
               // Load Data
               for ( int ff = 0; ff < nVarArray; ++ff )
@@ -1524,8 +1528,6 @@ int vtkCGNSReader::GetCurvilinearZone ( int fn, int  base, int zone,
                       continue;
                     }
                   cgioVarId = solChildId[ff];
-                  //cgio_get_node_id ( this->cgioNum, cgioSolId, cgnsVars[ff].name,
-                  //                   &cgioVarId );
 
                   // quick transfer of data because data types is given by cgns database
                   if ( cgnsVars[ff].isComponent == false )
@@ -1590,19 +1592,7 @@ int vtkCGNSReader::GetCurvilinearZone ( int fn, int  base, int zone,
             }
           cgio_release_id ( cgioNum, zoneChildId[nn] );
         }
-      // Handle Reference Values (Mach, ...)
-      const std::map< std::string, double>& arrState = this->Internal.GetBase ( base-1 ).referenceState;
-      std::map< std::string, double>::const_iterator iteRef = arrState.begin();
-      for ( iteRef = arrState.begin(); iteRef != arrState.end(); iteRef++ )
-        {
-          vtkDoubleArray* refValArray = vtkDoubleArray::New();
-          refValArray->SetNumberOfComponents ( 1 );
-          refValArray->SetName ( iteRef->first.c_str() );
-          refValArray->InsertNextValue ( iteRef->second );
-          sgrid->GetFieldData()->AddArray ( refValArray );
-          refValArray->Delete();
-        }
-      //
+      this->AttachReferenceValue(base, sgrid);
       if ( nosolutionread == false )
         {
           mbase->SetBlock ( ( zone-1 ), sgrid );
@@ -1622,7 +1612,7 @@ int vtkCGNSReader::GetCurvilinearZone ( int fn, int  base, int zone,
       char nodeLabel[CGIO_MAX_NAME_LENGTH+1];
       std::vector<double> zoneChildId;
       getNodeChildrenId ( this->cgioNum, this->currentId, zoneChildId );
-      
+
       // Hacky to be cleaned off
       CGNSRead::char_33* SolutionNameList = new CGNSRead::char_33[zoneChildId.size()];
       ssize_t ns = 0;
@@ -1636,14 +1626,14 @@ int vtkCGNSReader::GetCurvilinearZone ( int fn, int  base, int zone,
               CGNS_ENUMT ( GridLocation_t ) varCentering = CGNS_ENUMV ( Vertex );
               double cgioSolId = zoneChildId[nn];
               double cgioVarId;
-              
+
               cgio_get_name ( cgioNum, zoneChildId[nn], SolutionNameList[ns] );
 
               size_t nVarArray = 0;
               std::vector<double> solChildId;
-      
-              this->getVarsIdAndFillRind(cgioSolId, nVarArray, varCentering, solChildId, rind);
-     
+
+              this->getVarsIdAndFillRind ( cgioSolId, nVarArray, varCentering, solChildId, rind );
+
               if ( varCentering != CGNS_ENUMV ( Vertex ) &&
                    varCentering != CGNS_ENUMV ( CellCenter ) )
                 {
@@ -1666,8 +1656,8 @@ int vtkCGNSReader::GetCurvilinearZone ( int fn, int  base, int zone,
               std::vector< CGNSRead::CGNSVariable > cgnsVars ( nVarArray );
               std::vector< CGNSRead::CGNSVector > cgnsVectors;
 
-              this->fillArrayInformation( solChildId, physicalDim, cgnsVars, cgnsVectors);
-              
+              this->fillArrayInformation ( solChildId, physicalDim, cgnsVars, cgnsVectors );
+
               // Source
               cgsize_t fieldSrcStart[3]  = {1,1,1};
               cgsize_t fieldSrcStride[3] = {1,1,1};
@@ -1683,7 +1673,7 @@ int vtkCGNSReader::GetCurvilinearZone ( int fn, int  base, int zone,
 
               // Get solution data range
               int nsc = varCentering == CGNS_ENUMV ( Vertex ) ? 0 : cellDim;
-             
+
               for ( n = 0; n < cellDim; ++n )
                 {
                   fieldSrcStart[n] = rind[2*n] + 1;
@@ -1710,15 +1700,15 @@ int vtkCGNSReader::GetCurvilinearZone ( int fn, int  base, int zone,
               fieldVectMemEnd[0] = fieldMemEnd[0]*fieldVectMemStride[0];
               fieldVectMemEnd[1] = fieldMemEnd[1];
               fieldVectMemEnd[2] = fieldMemEnd[2];
-      
+
               //=============================
               //
               // Count number of vars and vectors
               // Assign vars and vectors to a vtkvars array
               std::vector<vtkDataArray *> vtkVars ( nVarArray );
 
-              this->AllocateVtkArray(physicalDim, nVals, varCentering, cgnsVars, cgnsVectors, vtkVars);
-              
+              this->AllocateVtkArray ( physicalDim, nVals, varCentering, cgnsVars, cgnsVectors, vtkVars );
+
               // Load Data
               for ( int ff = 0; ff < nVarArray; ++ff )
                 {
@@ -1798,22 +1788,7 @@ int vtkCGNSReader::GetCurvilinearZone ( int fn, int  base, int zone,
       for ( ssize_t sol=0; sol < StructuredGridList.size(); sol++ )
         {
           mzone->GetMetaData ( static_cast<unsigned int> ( sol ) )->Set ( vtkCompositeDataSet::NAME(), SolutionNameList[sol] );
-
-          // Handle Reference Values (Mach ...)
-          const std::map< std::string, double>& arrState = this->Internal.GetBase ( base-1 ).referenceState ;
-          std::map< std::string, double>::const_iterator iteRef = arrState.begin();
-
-          for ( iteRef = arrState.begin(); iteRef != arrState.end(); iteRef++ )
-            {
-              vtkDoubleArray* refValArray = vtkDoubleArray::New();
-              refValArray->SetNumberOfComponents ( 1 );
-              refValArray->SetName ( iteRef->first.c_str() );
-              refValArray->InsertNextValue ( iteRef->second );
-              StructuredGridList[sol]->GetFieldData()->AddArray ( refValArray );
-              refValArray->Delete();
-            }
-          //
-
+          this->AttachReferenceValue(base, StructuredGridList[sol]);
           mzone->SetBlock ( ( sol ), StructuredGridList[sol] );
           StructuredGridList[sol]->Delete();
         }
@@ -1875,13 +1850,13 @@ int vtkCGNSReader::GetUnstructuredZone ( int fn, int  base, int zone,
   bool readSolutionName = true;
   CGNSRead::char_33 GridCoordName;
   CGNSRead::char_33 SolutionName;
-  
+
   std::vector<double> gridChildId;
   size_t nCoordsArray = 0;
-  
-  this->getGridAndSolutionName(base, GridCoordName, SolutionName, readGridCoordName, readSolutionName);
-  
-  this->getCoordsIdAndFillRind(GridCoordName, physicalDim, nCoordsArray, gridChildId, rind);
+
+  this->getGridAndSolutionName ( base, GridCoordName, SolutionName, readGridCoordName, readSolutionName );
+
+  this->getCoordsIdAndFillRind ( GridCoordName, physicalDim, nCoordsArray, gridChildId, rind );
 
   // Rind was parsed or not then populate dimensions :
   // get grid coordinate range
@@ -1916,17 +1891,16 @@ int vtkCGNSReader::GetUnstructuredZone ( int fn, int  base, int zone,
   //
   if ( MeshType == CGNS_ENUMV ( RealDouble ) ) // DOUBLE PRECISION MESHPOINTS
     {
-            CGNSRead::get_XYZ_mesh<double,float>(this->cgioNum, gridChildId, nCoordsArray, cellDim, nPts,
-                                           srcStart,srcEnd,srcStride, memStart,memEnd,memStride,memDims,
-					   points );
+      CGNSRead::get_XYZ_mesh<double,float> ( this->cgioNum, gridChildId, nCoordsArray, cellDim, nPts,
+                                             srcStart,srcEnd,srcStride, memStart,memEnd,memStride,memDims,
+                                             points );
     }
   else  // SINGLE PRECISION MESHPOINTS
     {
-            CGNSRead::get_XYZ_mesh<float,double>(this->cgioNum, gridChildId, nCoordsArray, cellDim, nPts,
-                                           srcStart,srcEnd,srcStride, memStart,memEnd,memStride,memDims,
-					   points );
+      CGNSRead::get_XYZ_mesh<float,double> ( this->cgioNum, gridChildId, nCoordsArray, cellDim, nPts,
+                                             srcStart,srcEnd,srcStride, memStart,memEnd,memStride,memDims,
+                                             points );
     }
-//   cgio_release_id ( this->cgioNum, gridId );
   
   this->UpdateProgress ( 0.2 );
   // points are now loaded
@@ -1935,18 +1909,10 @@ int vtkCGNSReader::GetUnstructuredZone ( int fn, int  base, int zone,
   // Read List of zone children ids
   std::vector<double> zoneChildId;
   getNodeChildrenId ( this->cgioNum, this->currentId, zoneChildId );
+  //
   std::vector<double> solIdList;
   std::vector<double> elemIdList;
 
-  class SectionInformation
-  {
-  public:
-    CGNSRead::char_33 name;
-    CGNS_ENUMT ( ElementType_t ) elem_type;
-    cgsize_t range[2];
-    int bound;
-    cgsize_t eDataSize;
-  };
 
   for ( size_t nn = 0; nn < zoneChildId.size(); nn++ )
     {
@@ -1964,6 +1930,18 @@ int vtkCGNSReader::GetUnstructuredZone ( int fn, int  base, int zone,
           cgio_release_id ( this->cgioNum, zoneChildId[nn] );
         }
     }
+    
+
+  class SectionInformation
+  {
+  public:
+    CGNSRead::char_33 name;
+    CGNS_ENUMT ( ElementType_t ) elem_type;
+    cgsize_t range[2];
+    int bound;
+    cgsize_t eDataSize;
+  };
+  
   // Read the number of sections, for the zone.
   int nsections = 0;
   nsections = elemIdList.size() ;
@@ -2033,7 +2011,7 @@ int vtkCGNSReader::GetUnstructuredZone ( int fn, int  base, int zone,
           std::cerr << "Unexpected data for Elements_t node"
                     << std::endl;
         }
-      sectionInfoList[sec-1].elem_type = static_cast<CGNS_ENUMT(ElementType_t)>(mdata[0]);
+      sectionInfoList[sec-1].elem_type = static_cast<CGNS_ENUMT ( ElementType_t ) > ( mdata[0] );
       sectionInfoList[sec-1].bound = mdata[1];
 
 
@@ -2597,8 +2575,8 @@ int vtkCGNSReader::GetUnstructuredZone ( int fn, int  base, int zone,
       std::vector<double> solChildId;
       char nodeLabel[CGIO_MAX_NAME_LENGTH+1];
       size_t nVarArray = 0;
-      
-      this->getVarsIdAndFillRind(cgioSolId, nVarArray, varCentering, solChildId, rind);
+
+      this->getVarsIdAndFillRind ( cgioSolId, nVarArray, varCentering, solChildId, rind );
 
       if ( ( varCentering != CGNS_ENUMV ( Vertex ) ) &&
            ( varCentering != CGNS_ENUMV ( CellCenter ) ) )
@@ -2609,9 +2587,9 @@ int vtkCGNSReader::GetUnstructuredZone ( int fn, int  base, int zone,
       vtkDebugMacro ( "Reading solution :" << SolutionName << "\n" );
       std::vector< CGNSRead::CGNSVariable > cgnsVars ( nVarArray );
       std::vector< CGNSRead::CGNSVector > cgnsVectors;
-      
-      this->fillArrayInformation( solChildId, physicalDim, cgnsVars, cgnsVectors);
-      
+
+      this->fillArrayInformation ( solChildId, physicalDim, cgnsVars, cgnsVectors );
+
       // Source layout
       cgsize_t fieldSrcStart[3]  = {1,1,1};
       cgsize_t fieldSrcStride[3] = {1,1,1};
@@ -2625,7 +2603,7 @@ int vtkCGNSReader::GetUnstructuredZone ( int fn, int  base, int zone,
       cgsize_t fieldMemDims[3]   = {1,1,1};
 
       vtkIdType nVals = 0;
-      
+
       // Get solution data range
       int nsc = varCentering == CGNS_ENUMV ( Vertex ) ? 0 : 1;
       fieldSrcStart[0] = rind[0] + 1;
@@ -2657,8 +2635,8 @@ int vtkCGNSReader::GetUnstructuredZone ( int fn, int  base, int zone,
       // Count number of vars and vectors
       // Assign vars and vectors to a vtkvars array
       std::vector<vtkDataArray *> vtkVars ( nVarArray );
-      this->AllocateVtkArray(physicalDim, nVals, varCentering, cgnsVars, cgnsVectors, vtkVars);
-      
+      this->AllocateVtkArray ( physicalDim, nVals, varCentering, cgnsVars, cgnsVectors, vtkVars );
+
       // Load Data
       for ( int ff = 0; ff < nVarArray; ++ff )
         {
@@ -2733,18 +2711,8 @@ int vtkCGNSReader::GetUnstructuredZone ( int fn, int  base, int zone,
     }
 
   // Handle Reference Values (MAch Number, ...)
-  const std::map< std::string, double>& stateArray = this->Internal.GetBase ( base-1 ).referenceState ;
-  std::map< std::string, double>::const_iterator iteRef = stateArray.begin();
-  for ( iteRef = stateArray.begin(); iteRef != stateArray.end(); iteRef++ )
-    {
-      vtkDoubleArray* refValArray = vtkDoubleArray::New();
-      refValArray->SetNumberOfComponents ( 1 );
-      refValArray->SetName ( iteRef->first.c_str() );
-      refValArray->InsertNextValue ( iteRef->second );
-      ugrid->GetFieldData()->AddArray ( refValArray );
-      refValArray->Delete();
-    }
-
+  this->AttachReferenceValue(base, ugrid);
+  
   //--------------------------------------------------
   // Read patch boundary Sections
   //--------------------------------------------------
@@ -2814,10 +2782,6 @@ int vtkCGNSReader::GetUnstructuredZone ( int fn, int  base, int zone,
 
           cgioSectionId = elemIdList[sec-1];
 
-          //cgio_get_node_id ( this->cgioNum, this->currentId, sectionName,
-          //                   &cgioSectionId );
-
-
           if ( elemType != CGNS_ENUMV ( MIXED ) )
             {
               // All cells are of the same type.
@@ -2875,12 +2839,6 @@ int vtkCGNSReader::GetUnstructuredZone ( int fn, int  base, int zone,
               // because it cannot skip points ...
               //pointer on start !!
               vtkIdType* locElements = & ( bndElements[0] );
-//                   if ( cg_goto ( fn, base, "Zone_t", zone, "Elements_t", sec, "end" ) != CG_OK )
-//                     {
-//                       vtkErrorMacro ( << cg_get_error() << "\n" );
-//                     }
-//                   int narrays=0;
-//                   cg_narrays ( &narrays );
 
               cgsize_t memDim[2];
               cgsize_t npe = numPointsPerCell;
@@ -3146,17 +3104,7 @@ int vtkCGNSReader::GetUnstructuredZone ( int fn, int  base, int zone,
           bnd_id_arr->Delete();
 
           // Handle Ref Values
-          const std::map< std::string, double>& arrState = this->Internal.GetBase ( base-1 ).referenceState ;
-          std::map< std::string, double>::const_iterator iteRef = arrState.begin();
-          for ( iteRef = arrState.begin(); iteRef != arrState.end(); iteRef++ )
-            {
-              vtkDoubleArray* refValArray = vtkDoubleArray::New();
-              refValArray->SetNumberOfComponents ( 1 );
-              refValArray->SetName ( iteRef->first.c_str() );
-              refValArray->InsertNextValue ( iteRef->second );
-              bndugrid->GetFieldData()->AddArray ( refValArray );
-              refValArray->Delete();
-            }
+          this->AttachReferenceValue(base, bndugrid);
 
           // Copy PointData if exists
           vtkPointData* temp = ugrid->GetPointData();
@@ -3496,7 +3444,7 @@ int vtkCGNSReader::RequestData ( vtkInformation *vtkNotUsed ( request ),
                 {
                   baseChildId[nz] = baseChildId[nn];
                 }
-               nz++;
+              nz++;
             }
           else
             {
@@ -3562,7 +3510,7 @@ int vtkCGNSReader::RequestData ( vtkInformation *vtkNotUsed ( request ),
               return 1;
             }
 
-          
+
           mbase->GetMetaData ( zone - 1 )->Set ( vtkCompositeDataSet::NAME(), zoneName );
 
           double famId;
@@ -3621,8 +3569,8 @@ int vtkCGNSReader::RequestData ( vtkInformation *vtkNotUsed ( request ),
               break;
             }
             case CGNS_ENUMV ( Unstructured ) :
-               ier = GetUnstructuredZone ( fn, numBase, zone, cellDim, physicalDim, zsize, mbase );
-	       if ( ier != CG_OK )
+              ier = GetUnstructuredZone ( fn, numBase, zone, cellDim, physicalDim, zsize, mbase );
+              if ( ier != CG_OK )
                 {
                   vtkErrorMacro ( "" << "Error Reading file" );
                   return 0;
