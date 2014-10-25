@@ -116,6 +116,39 @@
           in a "Internal" node.
         </Documentation>
       </IntVectorProperty>
+      
+      <IntVectorProperty name="DoublePrecisionMesh"
+                         command="SetDoublePrecisionMesh"
+                         number_of_elements="1"
+                         animateable="0"
+                         default_values="1"
+                         label="Use Double Precision Mesh"
+                         panel_visibility="advanced">
+        <BooleanDomain name="bool" />
+        <Documentation>
+          Toggle whether to load mesh with double precision values or with floating values
+          If unchecked, mesh coordinates are store on 32 bit so it has lower memory footprint.
+          If checked, mesh coordinates are store on 64 bit so it has higher memory requirements.
+          Changing this property may impact the loading performance 
+          since if the cgns file mesh precision and the wanted precision are different
+          conversion will occur
+        </Documentation>
+      </IntVectorProperty>
+      
+        <IntVectorProperty name="CreateEachSolutionAsBlock"
+                         command="SetCreateEachSolutionAsBlock"
+                         number_of_elements="1"
+                         animateable="0"
+                         default_values="0"
+                         label="Each Solution As Block (Debug)"
+                         panel_visibility="advanced">
+        <BooleanDomain name="bool" />
+        <Documentation>
+          Toggle whether to load each Solution node under a zone separately.
+          This is intended only for debug purpose
+        </Documentation>
+      </IntVectorProperty>
+      
       <!-- End CGNSReader -->
     </SourceProxy>
   </ProxyGroup>
@@ -174,6 +207,8 @@
           <Property name="PointArrayInfo" />
           <Property name="PointArrayStatus" />
           <Property name="LoadBndPatch" />
+	  <Property name="DoublePrecisionMesh" />
+	  <Property name="CreateEachSolutionAsBlock" />
         </ExposedProperties>
       </SubProxy>
 

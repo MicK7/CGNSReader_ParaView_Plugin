@@ -15,6 +15,7 @@ include_directories(${CGNS_INCLUDE_DIR})
 
 SET_SOURCE_FILES_PROPERTIES(
 vtkCGNSReaderInternal
+cgio_helpers
 
 WRAP_EXCLUDE
 )
@@ -53,6 +54,8 @@ ENDIF (WIN32)
 
 
 SET(SOURCES
+cgio_helpers.cxx
+cgio_helpers.h
 vtkCGNSReaderInternal.cxx
 vtkCGNSReaderInternal.h
 vtkCGNSReader.cxx

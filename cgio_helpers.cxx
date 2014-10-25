@@ -1,51 +1,7 @@
-namespace CGNSReadb
+#include "cgio_helpers.h"
+
+namespace CGNSRead
 {
-
-//------------------------------------------------------------------------------
-template <typename T>
-int readNodeData(int cgioNum, double nodeId, std::vector<T>& data)
-{
-  int n;
-  cgsize_t size = 1;
-  cgsize_t dimVals[12];
-  int ndim;
-  T* tmpData;
-
-  if (cgio_get_dimensions(cgioNum, nodeId, &ndim, dimVals) != CG_OK)
-    {
-    cgio_error_exit("cgio_get_dimensions");
-    return 1;
-    }
-
-  // allocate data
-  for (n = 0; n < ndim; n++)
-    {
-    size *= dimVals[n];
-    }
-  if (size <= 0)
-    {
-    return 1;
-    }
-
-  data.resize(size);
-  tmpData = new T[size];
-
-  // read data
-  if (cgio_read_all_data(cgioNum, nodeId, tmpData) != CG_OK)
-    {
-    delete [] tmpData;
-    return 1;
-    }
-
-  for (size_t ii = 0; ii < data.size(); ++ii)
-    {
-    data[ii] = tmpData[ii];
-    }
-
-  delete [] tmpData;
-  return 0;
-}
-
 //------------------------------------------------------------------------------
 // Specialize char array
 template <>
@@ -95,7 +51,7 @@ int readNodeData<char>(int cgioNum, double nodeId, std::vector<char>& data)
 
 //------------------------------------------------------------------------------
 int getNodeChildrenId(int cgioNum, double fatherId,
-                          std::vector<double>& childrenIds)
+                      std::vector<double>& childrenIds)
 {
   int nchildren;
   int len;
@@ -197,7 +153,7 @@ int readBaseCoreInfo(int cgioNum, double baseId,
     return 1;
     }
 
-  CGNSReadb::readNodeData<int>(cgioNum, baseId, mdata);
+  CGNSRead::readNodeData<int>(cgioNum, baseId, mdata);
 
   baseInfo.physicalDim = mdata[0];
   baseInfo.cellDim = mdata[1];
@@ -230,7 +186,7 @@ int readBaseIteration(int cgioNum, double nodeId,
     return 1;
     }
 
-  CGNSReadb::readNodeData<int>(cgioNum, nodeId, ndata);
+  CGNSRead::readNodeData<int>(cgioNum, nodeId, ndata);
 
   int nstates = ndata[0];
   std::vector<double> childrenIterative;
@@ -263,14 +219,14 @@ int readBaseIteration(int cgioNum, double nodeId,
       baseInfo.times.clear();
       if (strcmp(dataType, "R8") == 0)
         {
-        CGNSReadb::readNodeData<double>(cgioNum,
+        CGNSRead::readNodeData<double>(cgioNum,
                                        childrenIterative[nc],
                                        baseInfo.times);
         }
       else if (strcmp(dataType, "R4") == 0)
         {
         std::vector<float> iteData;
-        CGNSReadb::readNodeData<float>(cgioNum,
+        CGNSRead::readNodeData<float>(cgioNum,
                                       childrenIterative[nc],
                                       iteData);
         baseInfo.times.resize(iteData.size());
@@ -312,7 +268,7 @@ int readBaseIteration(int cgioNum, double nodeId,
         }
 
       baseInfo.steps.clear();
-      CGNSReadb::readNodeData<int> ( cgioNum, childrenIterative[nc],
+      CGNSRead::readNodeData<int> ( cgioNum, childrenIterative[nc],
                                       baseInfo.steps );
       if (static_cast<int>(baseInfo.steps.size()) != nstates)
         {
@@ -366,13 +322,13 @@ int readZoneIterInfo(int cgioNum, double nodeId,
       return 1;
       }
     bool isDataArray = (strcmp(nodeLabel, "DataArray_t") == 0);
-    if ( isDataArray &&
-         (strcmp(nodeName, "GridCoordinatesPointers") == 0))
+    if (isDataArray &&
+        (strcmp(nodeName, "GridCoordinatesPointers") == 0))
       {
       baseInfo.useGridPointers = true ;
       }
-    else if ( isDataArray &&
-              ( strcmp ( nodeName, "FlowSolutionPointers" ) == 0 ) )
+    else if (isDataArray &&
+             (strcmp(nodeName, "FlowSolutionPointers") == 0))
       {
       baseInfo.useFlowPointers = true ;
       // Maybe load FlowSolutionPointers once and for all
@@ -405,15 +361,15 @@ int readSolInfo(int cgioNum, double nodeId,
     {
     if (cgio_get_label(cgioNum, solChildId[nn], nodeLabel) != CG_OK)
       {
-      std::cerr << "Error while reading nodelabel" << std::endl ;
+      std::cerr << "Error while reading nodelabel" << std::endl;
       return 1;
       }
 
-    if ( strcmp(nodeLabel, "DataArray_t") == 0)
+    if (strcmp(nodeLabel, "DataArray_t") == 0)
       {
       CGNSRead::CGNSVariable curVar;
 
-      if ( cgio_get_name ( cgioNum, solChildId[nn], curVar.name ) != CG_OK )
+      if (cgio_get_name(cgioNum, solChildId[nn], curVar.name) != CG_OK)
         {
         return 1;
         }
@@ -468,7 +424,7 @@ int readSolInfo(int cgioNum, double nodeId,
         }
 
       std::vector<char> location;
-      CGNSReadb::readNodeData<char>(cgioNum, solChildId[nn], location);
+      CGNSRead::readNodeData<char>(cgioNum, solChildId[nn], location);
 
       if (strcmp(location.data(), "Vertex") == 0)
         {
@@ -523,7 +479,7 @@ int readSolInfo(int cgioNum, double nodeId,
         break;
       }
     }
-  for ( size_t jj = 0; jj <cgnsVectors.size(); ++jj )
+  for (size_t jj = 0; jj < cgnsVectors.size(); ++jj)
     {
     switch (varCentering)
       {
@@ -617,13 +573,13 @@ int readBaseReferenceState(int cgioNum, double nodeId,
       if (strcmp(dataType, "R8") == 0)
         {
         std::vector<double> bdata;
-        CGNSReadb::readNodeData<double>(cgioNum, children[nn], bdata);
+        CGNSRead::readNodeData<double>(cgioNum, children[nn], bdata);
         baseInfo.referenceState[curName] = (double) bdata[0];
         }
       else if (strcmp(dataType, "R4") == 0)
         {
         std::vector<float> bdata;
-        CGNSReadb::readNodeData<float> ( cgioNum, children[nn], bdata );
+        CGNSRead::readNodeData<float> ( cgioNum, children[nn], bdata );
         baseInfo.referenceState[curName] = (double) bdata[0];
         }
       else

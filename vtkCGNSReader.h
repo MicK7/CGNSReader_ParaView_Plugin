@@ -2,7 +2,7 @@
 /*=========================================================================
 
   Program:   Visualization Toolkit
-  Module:    vtkCGNSReaderInternal.h
+  Module:    vtkCGNSReader.h
 
   Copyright (c) 2013-2014 Mickael Philit
   All rights reserved.
@@ -35,8 +35,6 @@
 #include "vtkMultiBlockDataSetAlgorithm.h"
 #include "vtkPVConfig.h"     // For PARAVIEW_USE_MPI
 
-//#include <cgns_io.h> // Low level IO
-//#include <cgnslib.h> // CGNS_VERSION + DataType_t
 #include "vtkCGNSReaderInternal.h" // For parsing information request
 
 class vtkDataArraySelection;
@@ -89,12 +87,18 @@ public:
   void DisableAllCellArrays();
   void EnableAllCellArrays();
 
-  
+  vtkSetMacro(DoublePrecisionMesh,int);
+  vtkGetMacro(DoublePrecisionMesh,int);
+  vtkBooleanMacro(DoublePrecisionMesh,int);
+
   vtkSetMacro(LoadBndPatch,int);
   vtkGetMacro(LoadBndPatch,int);
-  vtkBooleanMacro(LoadBndPatch,int);
-
-
+  vtkBooleanMacro(LoadBndPatch,int);  
+  
+  vtkSetMacro(CreateEachSolutionAsBlock,int);
+  vtkGetMacro(CreateEachSolutionAsBlock,int);
+  vtkBooleanMacro(CreateEachSolutionAsBlock,int);
+  
 #ifdef PARAVIEW_USE_MPI
   // Description:
   // Set/get the communication object used to relay a list of files
@@ -136,11 +140,11 @@ protected:
   static void SelectionModifiedCallback(vtkObject* caller, unsigned long eid,
                                         void* clientdata, void* calldata);
 
-  int GetCurvilinearZone(int fn, int  base, int zone,
+  int GetCurvilinearZone(int  base, int zone,
                          int cell_dim, int phys_dim, cgsize_t *zsize,
                          vtkMultiBlockDataSet *mbase);
 
-  int GetUnstructuredZone(int fn, int  base, int zone,
+  int GetUnstructuredZone(int  base, int zone,
                           int cell_dim, int phys_dim, cgsize_t *zsize,
                           vtkMultiBlockDataSet *mbase);
 #ifdef PARAVIEW_USE_MPI
@@ -163,21 +167,21 @@ protected:
                              std::vector<double>& gridChildId, int* rind);
   
   //BTX
-  int getVarsIdAndFillRind ( const double cgioSolId,
+  int getVarsIdAndFillRind(const double cgioSolId,
                            size_t& nVarArray, CGNS_ENUMT(GridLocation_t)& varCentering,
-                           std::vector<double>& solChildId, int* rind );
+                           std::vector<double>& solChildId, int* rind);
   //ETX
   
-  int fillArrayInformation ( const std::vector<double>& solChildId,
-                       const int physicalDim,
-                       std::vector< CGNSRead::CGNSVariable >& cgnsVars,
-                       std::vector< CGNSRead::CGNSVector >& cgnsVectors );
+  int fillArrayInformation(const std::vector<double>& solChildId,
+                           const int physicalDim,
+                           std::vector< CGNSRead::CGNSVariable >& cgnsVars,
+                           std::vector< CGNSRead::CGNSVector >& cgnsVectors);
   //BTX
-  int AllocateVtkArray ( const int physicalDim, const vtkIdType nVals,
+  int AllocateVtkArray(const int physicalDim, const vtkIdType nVals,
                        const CGNS_ENUMT ( GridLocation_t ) varCentering,
                        const std::vector< CGNSRead::CGNSVariable >& cgnsVars,
                        const std::vector< CGNSRead::CGNSVector >& cgnsVectors,
-                       std::vector<vtkDataArray *>& vtkVars );
+                       std::vector<vtkDataArray *>& vtkVars);
   //ETX
   int AttachReferenceValue(const int base, vtkDataSet* ds);
   
@@ -189,11 +193,13 @@ private:
 
   char *FileName; // cgns file name
   int LoadBndPatch; // option to set section loading for unstructured grid
-
-  // for internal cgio calls (low level IO)
-  int cgioNum;
-  double rootId;
-  double currentId;
+  int DoublePrecisionMesh; // option to set mesh loading to double precision
+  int CreateEachSolutionAsBlock; // debug option to create
+  
+  // For internal cgio calls (low level IO)
+  int cgioNum; // cgio file reference
+  double rootId; // id of root node
+  double currentId; // id of node currently being read (zone)
   //
   unsigned int NumberOfBases;
   int ActualTimeStep;
