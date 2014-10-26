@@ -162,7 +162,7 @@
                  file_name_method="SetFileName">
       <Documentation
          short_help="Read a dataset in CGNS format."
-         long_help="Read binary or ASCII files stored in CGNS format.">
+         long_help="Read binary files stored in CGNS format.">
         The CGNS reader reads binary files stored in CGNS format.
         The default file extension is .cgns. The output of this reader is
         a multi-block dataset.

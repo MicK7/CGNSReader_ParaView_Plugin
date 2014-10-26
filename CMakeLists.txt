@@ -28,8 +28,9 @@ IF(PARAVIEW_BUILD_QT_GUI)
   INCLUDE(${QT_USE_FILE})
 ENDIF(PARAVIEW_BUILD_QT_GUI)
 
+
 # -----------------------------------------------------------------------------
-# Disable some warnings
+# Disable some warnings + Add c++11
 # -----------------------------------------------------------------------------
 IF (WIN32)
   IF (MSVC_VERSION GREATER 1400)
@@ -40,10 +41,8 @@ IF (WIN32)
     ADD_DEFINITIONS(-D_CRT_SECURE_NO_DEPRECATE)
   ENDIF (MSVC_VERSION GREATER 1400)
 ELSEIF (UNIX)
+  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
   IF (CMAKE_COMPILER_IS_GNUCXX)
-    # -------------------------------------------------------------------------
-    # Disable "ignoring return value of ..." warnings from included gmvread.c
-    # -------------------------------------------------------------------------
     INCLUDE(CheckCXXCompilerFlag)
     CHECK_CXX_COMPILER_FLAG(-Wno-unused-result Wno-unused-result)
     IF (Wno-unused-result)

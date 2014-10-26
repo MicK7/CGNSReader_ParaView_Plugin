@@ -178,7 +178,7 @@ protected:
                            std::vector< CGNSRead::CGNSVector >& cgnsVectors);
   //BTX
   int AllocateVtkArray(const int physicalDim, const vtkIdType nVals,
-                       const CGNS_ENUMT ( GridLocation_t ) varCentering,
+                       const CGNS_ENUMT(GridLocation_t) varCentering,
                        const std::vector< CGNSRead::CGNSVariable >& cgnsVars,
                        const std::vector< CGNSRead::CGNSVector >& cgnsVectors,
                        std::vector<vtkDataArray *>& vtkVars);
