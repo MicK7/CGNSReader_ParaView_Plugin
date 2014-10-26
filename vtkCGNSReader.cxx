@@ -1902,9 +1902,9 @@ int vtkCGNSReader::GetUnstructuredZone(int base, int zone,
   const bool warningIdTypeSize = sizeof ( cgsize_t ) != sizeof ( vtkIdType );
   if (warningIdTypeSize == true)
     {
-    vtkWarningMacro(<< "Warning cgsize_t do not have same size as vtkIdType\n"
-                    << "sizeof vtkIdType = " << sizeof(vtkIdType) << "\n"
-                    << "sizeof cgsize_t = " << sizeof(cgsize_t) << "\n");
+    vtkDebugMacro(<< "Warning cgsize_t do not have same size as vtkIdType\n"
+                  << "sizeof vtkIdType = " << sizeof(vtkIdType) << "\n"
+                  << "sizeof cgsize_t = " << sizeof(cgsize_t) << "\n");
     }
   //========================================================================
   
@@ -2019,7 +2019,7 @@ int vtkCGNSReader::GetUnstructuredZone(int base, int zone,
   {
   public:
     CGNSRead::char_33 name;
-    CGNS_ENUMT(ElementType_t) elem_type;
+    CGNS_ENUMT(ElementType_t) elemType;
     cgsize_t range[2];
     int bound;
     cgsize_t eDataSize;
@@ -2047,11 +2047,11 @@ int vtkCGNSReader::GetUnstructuredZone(int base, int zone,
   for (int sec = 0; sec < nsections; ++sec)
     {
 
-    CGNS_ENUMT(ElementType_t) elemtype = CGNS_ENUMV(ElementTypeNull);
+    CGNS_ENUMT(ElementType_t) elemType = CGNS_ENUMV(ElementTypeNull);
     cgsize_t elementSize = 0;
 
     //
-    sectionInfoList[sec].elem_type = CGNS_ENUMV(ElementTypeNull);
+    sectionInfoList[sec].elemType = CGNS_ENUMV(ElementTypeNull);
     sectionInfoList[sec].range[0] = 1;
     sectionInfoList[sec].range[1] = 1;
     sectionInfoList[sec].bound = 0;
@@ -2079,7 +2079,7 @@ int vtkCGNSReader::GetUnstructuredZone(int base, int zone,
       {
       vtkErrorMacro(<< "Unexpected data for Elements_t node\n");
       }
-    sectionInfoList[sec].elem_type = static_cast<CGNS_ENUMT(ElementType_t)>(mdata[0]);
+    sectionInfoList[sec].elemType = static_cast<CGNS_ENUMT(ElementType_t)>(mdata[0]);
     sectionInfoList[sec].bound = mdata[1];
 
     // ElementRange
@@ -2116,7 +2116,7 @@ int vtkCGNSReader::GetUnstructuredZone(int base, int zone,
 
     elementSize = sectionInfoList[sec].range[1]
         - sectionInfoList[sec].range[0] + 1; // Interior Volume + Bnd
-    elemtype = sectionInfoList[sec].elem_type;
+    elemType = sectionInfoList[sec].elemType;
 
     cgio_get_node_id(this->cgioNum, elemIdList[sec], "ElementConnectivity", &elemConnectId);
     cgsize_t dimVals[12];
@@ -2144,7 +2144,7 @@ int vtkCGNSReader::GetUnstructuredZone(int base, int zone,
 
     cgsize_t eDataSize = 0;
     eDataSize = dimVals[0];
-    if (elemtype != CGNS_ENUMV(MIXED))
+    if (elemType != CGNS_ENUMV(MIXED))
       {
       eDataSize += elementSize;
       }
@@ -2203,7 +2203,7 @@ int vtkCGNSReader::GetUnstructuredZone(int base, int zone,
 
     start = sectionInfoList[sec].range[0];
     end = sectionInfoList[sec].range[1];
-    elemType = sectionInfoList[sec].elem_type;
+    elemType = sectionInfoList[sec].elemType;
 
     elementSize = end-start+1; // Interior Volume + Bnd
 
@@ -2567,7 +2567,7 @@ int vtkCGNSReader::GetUnstructuredZone(int base, int zone,
 
       start = sectionInfoList[sec].range[0];
       end = sectionInfoList[sec].range[1];
-      elemType = sectionInfoList[sec].elem_type;
+      elemType = sectionInfoList[sec].elemType;
 
       mpatch->GetMetaData(static_cast<unsigned int >(bndNum))->Set(vtkCompositeDataSet::NAME(), sectionInfoList[sec].name);
       elementSize = end-start+1; // Bnd Volume + Bnd
@@ -3098,8 +3098,8 @@ int vtkCGNSReader::RequestData(vtkInformation *vtkNotUsed(request),
       CGNSRead::char_33 zoneName;
       cgsize_t zsize[9];
       CGNS_ENUMT(ZoneType_t) zt = CGNS_ENUMV(ZoneTypeNull);
-      memset ( zoneName, 0, 33 );
-      memset ( zsize, 0, 9*sizeof ( cgsize_t ) );
+      memset(zoneName, 0, 33);
+      memset(zsize, 0, 9*sizeof(cgsize_t));
 
       if (cgio_get_name(this->cgioNum, baseChildId[zone], zoneName) != CG_OK)
         {
