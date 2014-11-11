@@ -19,7 +19,7 @@
 //     provide function to simplify "CGNS" reading through cgio
 //
 // .SECTION Caveats
-//     
+//
 //
 // .SECTION Thanks
 // Thanks to .
@@ -49,7 +49,6 @@ inline int readNodeData(int cgioNum, double nodeId, std::vector<T>& data)
   cgsize_t size = 1;
   cgsize_t dimVals[12];
   int ndim;
-  T* tmpData;
 
   if (cgio_get_dimensions(cgioNum, nodeId, &ndim, dimVals) != CG_OK)
     {
@@ -66,23 +65,14 @@ inline int readNodeData(int cgioNum, double nodeId, std::vector<T>& data)
     {
     return 1;
     }
-
   data.resize(size);
-  tmpData = new T[size];
 
   // read data
-  if (cgio_read_all_data(cgioNum, nodeId, tmpData) != CG_OK)
+  if (cgio_read_all_data(cgioNum, nodeId, &data[0]) != CG_OK)
     {
-    delete [] tmpData;
     return 1;
     }
 
-  for (size_t ii = 0; ii < data.size(); ++ii)
-    {
-    data[ii] = tmpData[ii];
-    }
-
-  delete [] tmpData;
   return 0;
 }
 

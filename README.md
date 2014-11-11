@@ -9,7 +9,7 @@ B. Whitlock. But it relies on the low level CGNS API to load DataSet
 and try to reduce memory footprint.
 
 Features:
-  * Multi-block dataset are created for ustructured grids 
+  * Multi-block dataset are created for ustructured grids
 and structured meshes stored in binary CGNS file format.
   * Basic support for CGNS vectors (Velocity, ...) following SIDS naming scheme
   * Basic time support with either one time step per file or one file for all timesteps (not tested)

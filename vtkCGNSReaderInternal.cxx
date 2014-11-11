@@ -15,14 +15,455 @@
   =========================================================================*/
 #include "vtkCGNSReaderInternal.h"
 
-#include <cgns_io.h> // Low level IO for fast parsing
-#include <iostream>
 #include <algorithm>
-
+#include "vtkCellType.h"
 #include "cgio_helpers.h"
 
 namespace CGNSRead
 {
+//------------------------------------------------------------------------------
+int setUpRind(const int cgioNum, const double rindId, int *rind)
+{
+  CGNSRead::char_33 dataType;
+  if (cgio_get_data_type(cgioNum, rindId, dataType) != CG_OK)
+    {
+    std::cerr  << "Problem while reading Rind data type\n";
+    return 1;
+    }
+
+  if (strcmp(dataType, "I4") == 0)
+    {
+    std::vector<int> mdata;
+    CGNSRead::readNodeData<int>(cgioNum, rindId, mdata);
+    for (size_t index=0; index < mdata.size(); index++)
+      {
+      rind[index] = static_cast<int>(mdata[index]);
+      }
+    }
+  else if (strcmp(dataType, "I8") == 0)
+    {
+    std::vector<cglong_t> mdata;
+    CGNSRead::readNodeData<cglong_t> ( cgioNum, rindId, mdata );
+    for (size_t index=0; index < mdata.size(); index++)
+      {
+      rind[index] = static_cast<int>(mdata[index]);
+      }
+    }
+  return 0;
+}
+
+//------------------------------------------------------------------------------
+int getFirstNodeId(const int cgioNum, const double parentId,
+                   const char *label, double *id)
+{
+  int nId, n, nChildren, len;
+  int ier = 0;
+  char nodeLabel[CGIO_MAX_NAME_LENGTH+1];
+
+  if (cgio_number_children(cgioNum, parentId, &nChildren) != CG_OK)
+    {
+    return 1;
+    }
+  if (nChildren < 1)
+    {
+    return 1;
+    }
+
+  double *idList = new double[nChildren];
+  cgio_children_ids(cgioNum, parentId, 1, nChildren, &len, idList);
+  if (len != nChildren)
+    {
+    delete[] idList;
+    std::cerr << "Mismatch in number of children and child IDs read"
+              << std::endl;
+    return 1;
+    }
+
+  nId = 0;
+  for (n = 0; n < nChildren; n++)
+    {
+    if (cgio_get_label(cgioNum, idList[n], nodeLabel))
+      {
+      return 1;
+      }
+    if (0 == strcmp(nodeLabel, label))
+      {
+      *id = idList[n];
+      nId = 1;
+      }
+    else
+      {
+      cgio_release_id(cgioNum, idList[n]);
+      }
+    if (nId != 0)
+      {
+      break;
+      }
+    }
+  n++;
+  while (n < nChildren)
+    {
+    cgio_release_id(cgioNum, idList[n]);
+    n++;
+    }
+
+  if (nId < 1)
+    {
+    *id = 0.0;
+    ier = 1;
+    }
+
+  delete[] idList;
+  return ier;
+}
+
+//------------------------------------------------------------------------------
+int get_section_connectivity(const int cgioNum, const double cgioSectionId,
+                             const int dim, const cgsize_t* srcStart,
+                             const cgsize_t* srcEnd, const cgsize_t* srcStride,
+                             const cgsize_t* memStart, const cgsize_t* memEnd,
+                             const cgsize_t* memStride, const cgsize_t* memDim,
+                             vtkIdType* localElements)
+{
+  const char *connectivityPath = "ElementConnectivity";
+  double cgioElemConnectId;
+  char dataType[3];
+  size_t sizeOfCnt;
+
+  cgio_get_node_id(cgioNum, cgioSectionId, connectivityPath, &cgioElemConnectId);
+  cgio_get_data_type(cgioNum, cgioElemConnectId, dataType);
+
+  if (strcmp(dataType, "I4") == 0)
+    {
+    sizeOfCnt = sizeof(int);
+    }
+  else if (strcmp(dataType, "I8") == 0)
+    {
+    sizeOfCnt = sizeof ( cglong_t );
+    }
+  else
+    {
+    std::cerr << "ElementConnectivity data_type unknown\n";
+    }
+
+  if (sizeOfCnt == sizeof(vtkIdType))
+    {
+    if (cgio_read_data(cgioNum, cgioElemConnectId,
+                       srcStart, srcEnd, srcStride, dim, memDim,
+                       memStart, memEnd, memStride,
+                       (void *) localElements) != CG_OK)
+      {
+      char message[81];
+      cgio_error_message(message);
+      std::cerr << "cgio_read_data :" << message;
+      }
+    }
+  else
+    {
+    // Need to read into temp array to convert data
+    cgsize_t nn = 1;
+    for(int ii=0; ii< dim; ii++)
+      {
+      nn *= memDim[ii];
+      }
+    if (sizeOfCnt == sizeof(int))
+      {
+      int *data = new int[nn];
+      if (data == 0)
+        {
+        std::cerr << "Allocation failed for temporary connectivity array\n";
+        }
+
+      if (cgio_read_data(cgioNum, cgioElemConnectId,
+                         srcStart, srcEnd, srcStride, dim, memDim,
+                         memStart, memEnd, memStride,
+                         (void *) data) != CG_OK)
+        {
+        delete[] data;
+        char message[81];
+        cgio_error_message(message);
+        std::cerr << "cgio_read_data :" << message;
+        return 1;
+        }
+      for (cgsize_t n = 0; n < nn; n++)
+        {
+        localElements[n] = static_cast<vtkIdType>(data[n]);
+        }
+      delete[] data;
+      }
+    else if (sizeOfCnt == sizeof(cglong_t))
+      {
+      cglong_t* data = new cglong_t[nn];
+      if (data == 0)
+        {
+        std::cerr << "Allocation failed for temporary connectivity array\n";
+        return 1;
+        }
+      if ( cgio_read_data(cgioNum, cgioElemConnectId,
+                          srcStart, srcEnd, srcStride, dim, memDim,
+                          memStart, memEnd, memStride,
+                          (void *) data) != CG_OK)
+        {
+        delete[] data;
+        char message[81];
+        cgio_error_message ( message );
+        std::cerr << "cgio_read_data :" << message;
+        return 1;
+        }
+      for (cgsize_t n = 0; n < nn; n++)
+        {
+        localElements[n] = static_cast<vtkIdType>(data[n]);
+        }
+      delete[] data;
+      }
+    }
+  cgio_release_id(cgioNum, cgioElemConnectId);
+  return 0;
+}
+
+//------------------------------------------------------------------------------
+int GetVTKElemType(CGNS_ENUMT(ElementType_t) elemType, bool &higherOrderWarning,
+                   bool &cgnsOrderFlag)
+{
+  int cellType;
+  higherOrderWarning = false;
+  cgnsOrderFlag = false;
+  //
+  switch(elemType)
+    {
+    case CGNS_ENUMV(NODE):
+      cellType = VTK_VERTEX;
+      break;
+    case CGNS_ENUMV(BAR_2):
+      cellType = VTK_LINE;
+      break;
+    case CGNS_ENUMV(BAR_3):
+      cellType = VTK_QUADRATIC_EDGE;
+      higherOrderWarning = true;
+      break;
+      //case CGNS_ENUMV(BAR_4):
+      //  cellType = VTK_CUBIC_LINE;
+      //  higherOrderWarning = true;
+      //  break;
+    case CGNS_ENUMV(TRI_3) :
+      cellType = VTK_TRIANGLE;
+      break;
+    case CGNS_ENUMV(TRI_6):
+      cellType = VTK_QUADRATIC_TRIANGLE;
+      higherOrderWarning = true;
+      break;
+    case CGNS_ENUMV(QUAD_4):
+      cellType = VTK_QUAD;
+      break;
+    case CGNS_ENUMV(QUAD_8):
+      cellType = VTK_QUADRATIC_QUAD;
+      higherOrderWarning = true;
+      break;
+    case CGNS_ENUMV(QUAD_9):
+      cellType = VTK_BIQUADRATIC_QUAD;
+      higherOrderWarning = true;
+      break;
+    case CGNS_ENUMV(TETRA_4):
+      cellType = VTK_TETRA;
+      break;
+    case CGNS_ENUMV(TETRA_10):
+      cellType = VTK_QUADRATIC_TETRA;
+      higherOrderWarning = true;
+      break;
+    case CGNS_ENUMV(PYRA_5):
+      cellType = VTK_PYRAMID;
+      break;
+    case CGNS_ENUMV(PYRA_14):
+      cellType = VTK_QUADRATIC_PYRAMID;
+      higherOrderWarning = true;
+      break;
+    case CGNS_ENUMV(PENTA_6):
+      cellType = VTK_WEDGE;
+      break;
+    case CGNS_ENUMV(PENTA_15):
+      cellType = VTK_QUADRATIC_WEDGE;
+      higherOrderWarning = true;
+      cgnsOrderFlag = true;
+      break;
+    case CGNS_ENUMV(PENTA_18):
+      cellType = VTK_BIQUADRATIC_QUADRATIC_WEDGE;
+      higherOrderWarning = true;
+      cgnsOrderFlag = true;
+      break;
+    case CGNS_ENUMV(HEXA_8):
+      cellType = VTK_HEXAHEDRON;
+      break;
+    case CGNS_ENUMV(HEXA_20):
+      cellType = VTK_QUADRATIC_HEXAHEDRON;
+      higherOrderWarning = true;
+      cgnsOrderFlag = true;
+      break;
+    case CGNS_ENUMV(HEXA_27):
+      cellType = VTK_TRIQUADRATIC_HEXAHEDRON;
+      higherOrderWarning = true;
+      cgnsOrderFlag = true;
+      break;
+    default:
+      cellType = VTK_EMPTY_CELL;
+      break;
+    }
+  return cellType;
+}
+//------------------------------------------------------------------------------
+inline const int * getTranslator(const int cellType)
+{
+  //static const int NULL_translate[27] = {0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,
+  //                                  16,17,18,19,20,21,22,23,24,25,26};
+
+  //CGNS --> VTK ordering of Elements
+  static const int NODE_ToVTK[1]  = {0};
+
+  static const int BAR_2_ToVTK[2] = {0,1};
+
+  static const int BAR_3_ToVTK[3] = {0,1,2};
+
+  static const int BAR_4_ToVTK[4] = {0,1,2,3};
+
+  static const int TRI_3_ToVTK[3] = {0,1,2};
+
+  static const int TRI_6_ToVTK[6] = {0,1,2,3,4,5};
+
+  static const int QUAD_4_ToVTK[4] = {0,1,2,3};
+
+  static const int QUAD_8_ToVTK[8] = {0,1,2,3,4,5,6,7};
+
+  static const int QUAD_9_ToVTK[9] = {0,1,2,3,4,5,6,7,8};
+
+  static const int TETRA_4_ToVTK[4] = {0,1,2,3};
+
+  static const int TETRA_10_ToVTK[10] = {0,1,2,3,4,5,6,7,8,9};
+
+  static const int PYRA_5_ToVTK[5] = {0,1,2,3,4};
+
+  static const int PYRA_14_ToVTK[14] = {0,1,2,3,4,
+                                        5,6,7,8,9,
+                                        10,11,12,13
+                                       };
+
+  static const int PENTA_6_ToVTK[6] = {0,1,2,3,4,5};
+
+  static const int PENTA_15_ToVTK[15] = {0,1,2,3,4,5,6,7,8,
+                                         12,13,14,
+                                         9,10,11
+                                        };
+
+  static const int PENTA_18_ToVTK[18] = {0,1,2,3,4,5,6,7,8,
+                                         12,13,14,
+                                         9,10,11,
+                                         15,16,17
+                                        };
+
+  static const int HEXA_8_ToVTK[8] = {0,1,2,3,4,5,6,7};
+
+  static const int HEXA_20_ToVTK[20] = {0,1,2,3,4,5,6,7,
+                                        8,9,10,11,
+                                        16,17,18,19,
+                                        12,13,14,15
+                                       };
+
+  static const int HEXA_27_ToVTK[27] = {0,1,2,3,4,5,6,7,
+                                        8,9,10,11,
+                                        16,17,18,19,
+                                        12,13,14,15,
+                                        24,22,21,23,
+                                        20,25,26
+                                       };
+
+  switch (cellType)
+    {
+    case VTK_VERTEX:
+    case VTK_LINE:
+    case VTK_QUADRATIC_EDGE:
+    case VTK_CUBIC_LINE:
+    case VTK_TRIANGLE:
+    case VTK_QUADRATIC_TRIANGLE:
+    case VTK_QUAD:
+    case VTK_QUADRATIC_QUAD:
+    case VTK_BIQUADRATIC_QUAD:
+    case VTK_TETRA:
+    case VTK_QUADRATIC_TETRA:
+    case VTK_PYRAMID:
+    case VTK_QUADRATIC_PYRAMID:
+    case VTK_WEDGE:
+      return NULL;
+    case VTK_QUADRATIC_WEDGE:
+      return PENTA_15_ToVTK;
+    case VTK_BIQUADRATIC_QUADRATIC_WEDGE:
+      return PENTA_18_ToVTK;
+    case VTK_HEXAHEDRON:
+      return NULL;
+    case VTK_QUADRATIC_HEXAHEDRON:
+      return HEXA_20_ToVTK;
+    case VTK_TRIQUADRATIC_HEXAHEDRON:
+      return HEXA_27_ToVTK;
+    default:
+      return NULL;
+    }
+}
+
+//------------------------------------------------------------------------------
+void CGNS2VTKorder(const vtkIdType size, const int *cells_types,
+                   vtkIdType *elements)
+{
+  const int maxPointsPerCells = 27;
+  int tmp[maxPointsPerCells];
+  const int *translator;
+  vtkIdType pos = 0;
+  for (vtkIdType icell = 0; icell < size; ++icell)
+    {
+    translator = getTranslator(cells_types[icell]);
+    vtkIdType numPointsPerCell = elements[pos];
+    pos++;
+    if (translator != NULL)
+      {
+      for (vtkIdType ip = 0; ip < numPointsPerCell; ++ip)
+        {
+        tmp[ip] = elements[translator[ip]+pos];
+        }
+      for (vtkIdType ip = 0; ip < numPointsPerCell; ++ip)
+        {
+        elements[pos+ip] = tmp[ip];
+        }
+      }
+    pos += numPointsPerCell;
+    }
+}
+
+//------------------------------------------------------------------------------
+void CGNS2VTKorderMonoElem(const vtkIdType size, const int cell_type,
+                           vtkIdType *elements)
+{
+  const int maxPointsPerCells = 27;
+
+  int tmp[maxPointsPerCells];
+  const int *translator;
+  translator = getTranslator(cell_type);
+  if (translator == NULL)
+    {
+    return;
+    }
+
+  vtkIdType pos = 0;
+  for (vtkIdType icell = 0; icell < size; ++icell)
+    {
+    vtkIdType numPointsPerCell = elements[pos];
+    pos++;
+    for (vtkIdType ip = 0; ip < numPointsPerCell; ++ip)
+      {
+      tmp[ip] = elements[translator[ip]+pos];
+      }
+    for (vtkIdType ip = 0; ip < numPointsPerCell; ++ip)
+      {
+      elements[pos+ip] = tmp[ip];
+      }
+    pos += numPointsPerCell;
+    }
+}
 
 //------------------------------------------------------------------------------
 bool testValidVector(const CGNSVector& item)

@@ -11,7 +11,6 @@ int readNodeData<char>(int cgioNum, double nodeId, std::vector<char>& data)
   cgsize_t size=1;
   cgsize_t dimVals[12];
   int ndim;
-  char* tmpData;
 
   if (cgio_get_dimensions(cgioNum, nodeId, &ndim, dimVals) != CG_OK)
     {
@@ -30,22 +29,14 @@ int readNodeData<char>(int cgioNum, double nodeId, std::vector<char>& data)
     }
 
   data.resize(size+1);
-  tmpData = new char[size];
 
   // read data
-  if (cgio_read_all_data(cgioNum, nodeId, tmpData) != CG_OK)
+  if (cgio_read_all_data(cgioNum, nodeId, &data[0]) != CG_OK)
     {
-    delete [] tmpData;
     return 1;
-    }
-
-  for (size_t ii=0; ii < data.size(); ++ii)
-    {
-    data[ii] = tmpData[ii];
     }
   data[size] = '\0';
 
-  delete [] tmpData;
   return 0;
 }
 
@@ -153,7 +144,12 @@ int readBaseCoreInfo(int cgioNum, double baseId,
     return 1;
     }
 
-  CGNSRead::readNodeData<int>(cgioNum, baseId, mdata);
+  if (CGNSRead::readNodeData<int>(cgioNum, baseId, mdata) != 0)
+    {
+    std::cerr << "error while reading base dimension"
+              << std::endl;
+    return 1;
+    }
 
   baseInfo.physicalDim = mdata[0];
   baseInfo.cellDim = mdata[1];
@@ -186,8 +182,12 @@ int readBaseIteration(int cgioNum, double nodeId,
     return 1;
     }
 
-  CGNSRead::readNodeData<int>(cgioNum, nodeId, ndata);
-
+  if (CGNSRead::readNodeData<int>(cgioNum, nodeId, ndata) != 0)
+    {
+    std::cerr << "error while reading number of state in base"
+              << std::endl;
+    return 1;
+    }
   int nstates = ndata[0];
   std::vector<double> childrenIterative;
 
@@ -573,14 +573,18 @@ int readBaseReferenceState(int cgioNum, double nodeId,
       if (strcmp(dataType, "R8") == 0)
         {
         std::vector<double> bdata;
-        CGNSRead::readNodeData<double>(cgioNum, children[nn], bdata);
-        baseInfo.referenceState[curName] = (double) bdata[0];
+        if (CGNSRead::readNodeData<double>(cgioNum, children[nn], bdata) == 0)
+          {
+          baseInfo.referenceState[curName] = (double) bdata[0];
+          }
         }
       else if (strcmp(dataType, "R4") == 0)
         {
         std::vector<float> bdata;
-        CGNSRead::readNodeData<float> ( cgioNum, children[nn], bdata );
-        baseInfo.referenceState[curName] = (double) bdata[0];
+        if (CGNSRead::readNodeData<float>(cgioNum, children[nn], bdata) == 0)
+          {
+          baseInfo.referenceState[curName] = (double) bdata[0];
+          }
         }
       else
         {

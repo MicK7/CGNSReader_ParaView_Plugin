@@ -65,7 +65,7 @@
                             element_types="2 0"
                             information_property="PointArrayInfo"
                             label="Point Arrays"
-			    >
+                            >
         <ArraySelectionDomain name="array_list">
           <RequiredProperties>
             <Property name="PointArrayInfo" function="ArrayList" />
@@ -81,7 +81,7 @@
         <ArraySelectionInformationHelper attribute_name="Cell" />
       </StringVectorProperty>
 
-     <StringVectorProperty name="CellArrayStatus"
+      <StringVectorProperty name="CellArrayStatus"
                             command="SetCellArrayStatus"
                             number_of_elements="0"
                             repeat_command="1"
@@ -89,7 +89,7 @@
                             element_types="2 0"
                             information_property="CellArrayInfo"
                             label="Cell Arrays"
-			    >
+                            >
         <ArraySelectionDomain name="array_list">
           <RequiredProperties>
             <Property name="CellArrayInfo" function="ArrayList" />
@@ -116,7 +116,7 @@
           in a "Internal" node.
         </Documentation>
       </IntVectorProperty>
-      
+
       <IntVectorProperty name="DoublePrecisionMesh"
                          command="SetDoublePrecisionMesh"
                          number_of_elements="1"
@@ -129,13 +129,13 @@
           Toggle whether to load mesh with double precision values or with floating values
           If unchecked, mesh coordinates are store on 32 bit so it has lower memory footprint.
           If checked, mesh coordinates are store on 64 bit so it has higher memory requirements.
-          Changing this property may impact the loading performance 
+          Changing this property may impact the loading performance
           since if the cgns file mesh precision and the wanted precision are different
           conversion will occur
         </Documentation>
       </IntVectorProperty>
-      
-        <IntVectorProperty name="CreateEachSolutionAsBlock"
+
+      <IntVectorProperty name="CreateEachSolutionAsBlock"
                          command="SetCreateEachSolutionAsBlock"
                          number_of_elements="1"
                          animateable="0"
@@ -148,7 +148,7 @@
           This is intended only for debug purpose
         </Documentation>
       </IntVectorProperty>
-      
+
       <!-- End CGNSReader -->
     </SourceProxy>
   </ProxyGroup>
@@ -197,7 +197,7 @@
       <SubProxy>
         <Proxy name="Reader"
                proxygroup="internal_sources"
-               proxyname="CGNSReader"> 
+               proxyname="CGNSReader">
         </Proxy>
         <ExposedProperties>
           <Property name="BaseInfo" />
@@ -207,8 +207,8 @@
           <Property name="PointArrayInfo" />
           <Property name="PointArrayStatus" />
           <Property name="LoadBndPatch" />
-	  <Property name="DoublePrecisionMesh" />
-	  <Property name="CreateEachSolutionAsBlock" />
+          <Property name="DoublePrecisionMesh" />
+          <Property name="CreateEachSolutionAsBlock" />
         </ExposedProperties>
       </SubProxy>
 
@@ -221,7 +221,7 @@
           Available time step values.
         </Documentation>
       </DoubleVectorProperty>
- 
+
       <!-- End of CGNSSeriesReader -->
     </SourceProxy>
   </ProxyGroup>

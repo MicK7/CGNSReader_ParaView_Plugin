@@ -59,7 +59,7 @@ public:
   // Description:
   // Is the given file name a CGNS file?
   int CanReadFile(const char* filename);
-  
+
 
   // The following methods allow selective reading of solutions fields.
   int GetBaseArrayStatus(const char* name);
@@ -67,17 +67,17 @@ public:
   void DisableAllBases();
   void EnableAllBases();
 
-  int GetNumberOfBaseArrays(); 
+  int GetNumberOfBaseArrays();
   int GetNumberOfPointArrays();
   int GetNumberOfCellArrays();
 
   const char* GetBaseArrayName(int index);
   const char* GetPointArrayName(int index);
   const char* GetCellArrayName(int index);
-  
+
   int GetPointArrayStatus(const char* name);
   int GetCellArrayStatus(const char* name);
-  
+
   void SetPointArrayStatus(const char* name, int status);
   void SetCellArrayStatus(const char* name, int status);
 
@@ -93,12 +93,12 @@ public:
 
   vtkSetMacro(LoadBndPatch,int);
   vtkGetMacro(LoadBndPatch,int);
-  vtkBooleanMacro(LoadBndPatch,int);  
-  
+  vtkBooleanMacro(LoadBndPatch,int);
+
   vtkSetMacro(CreateEachSolutionAsBlock,int);
   vtkGetMacro(CreateEachSolutionAsBlock,int);
   vtkBooleanMacro(CreateEachSolutionAsBlock,int);
-  
+
 #ifdef PARAVIEW_USE_MPI
   // Description:
   // Set/get the communication object used to relay a list of files
@@ -127,7 +127,7 @@ protected:
                                  vtkInformationVector**,
                                  vtkInformationVector*);
 
-  
+
   vtkDataArraySelection* BaseSelection;
   vtkDataArraySelection* PointDataArraySelection;
   vtkDataArraySelection* CellDataArraySelection;
@@ -153,38 +153,36 @@ protected:
   vtkIdType ProcSize;
 #endif
 
-  //BTX
+#ifndef __WRAP__
   bool IsVarEnabled(CGNS_ENUMT(GridLocation_t) varcentering,
                     const CGNSRead::char_33 name);
-  //ETX
 
   int getGridAndSolutionName(int base,
                              CGNSRead::char_33 GridCoordName, CGNSRead::char_33 SolutionName,
                              bool& readGridCoordName, bool& readSolutionName);
-  
+
   int getCoordsIdAndFillRind(const CGNSRead::char_33 GridCoordName,
                              const int physicalDim, size_t& nCoordsArray,
                              std::vector<double>& gridChildId, int* rind);
-  
-  //BTX
+
   int getVarsIdAndFillRind(const double cgioSolId,
                            size_t& nVarArray, CGNS_ENUMT(GridLocation_t)& varCentering,
                            std::vector<double>& solChildId, int* rind);
-  //ETX
-  
+
   int fillArrayInformation(const std::vector<double>& solChildId,
                            const int physicalDim,
                            std::vector< CGNSRead::CGNSVariable >& cgnsVars,
                            std::vector< CGNSRead::CGNSVector >& cgnsVectors);
-  //BTX
+
   int AllocateVtkArray(const int physicalDim, const vtkIdType nVals,
                        const CGNS_ENUMT(GridLocation_t) varCentering,
                        const std::vector< CGNSRead::CGNSVariable >& cgnsVars,
                        const std::vector< CGNSRead::CGNSVector >& cgnsVectors,
                        std::vector<vtkDataArray *>& vtkVars);
-  //ETX
+
   int AttachReferenceValue(const int base, vtkDataSet* ds);
-  
+#endif
+
 private:
   vtkCGNSReader(const vtkCGNSReader&);  // Not implemented.
   void operator=(const vtkCGNSReader&);  // Not implemented.
@@ -195,7 +193,7 @@ private:
   int LoadBndPatch; // option to set section loading for unstructured grid
   int DoublePrecisionMesh; // option to set mesh loading to double precision
   int CreateEachSolutionAsBlock; // debug option to create
-  
+
   // For internal cgio calls (low level IO)
   int cgioNum; // cgio file reference
   double rootId; // id of root node
