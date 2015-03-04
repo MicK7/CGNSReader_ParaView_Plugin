@@ -1,6 +1,0 @@
-<ParaViewReaders>
-  <Reader name="CGNSSeriesReader"
-    extensions="cgns"
-    file_description="CGNS Binary Files (Plugin)">
-  </Reader>
-</ParaViewReaders>

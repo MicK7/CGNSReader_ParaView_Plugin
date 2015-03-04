@@ -65,7 +65,7 @@
                             element_types="2 0"
                             information_property="PointArrayInfo"
                             label="Point Arrays"
-			    >
+                            >
         <ArraySelectionDomain name="array_list">
           <RequiredProperties>
             <Property name="PointArrayInfo" function="ArrayList" />
@@ -81,7 +81,7 @@
         <ArraySelectionInformationHelper attribute_name="Cell" />
       </StringVectorProperty>
 
-     <StringVectorProperty name="CellArrayStatus"
+      <StringVectorProperty name="CellArrayStatus"
                             command="SetCellArrayStatus"
                             number_of_elements="0"
                             repeat_command="1"
@@ -89,7 +89,7 @@
                             element_types="2 0"
                             information_property="CellArrayInfo"
                             label="Cell Arrays"
-			    >
+                            >
         <ArraySelectionDomain name="array_list">
           <RequiredProperties>
             <Property name="CellArrayInfo" function="ArrayList" />
@@ -116,6 +116,39 @@
           in a "Internal" node.
         </Documentation>
       </IntVectorProperty>
+
+      <IntVectorProperty name="DoublePrecisionMesh"
+                         command="SetDoublePrecisionMesh"
+                         number_of_elements="1"
+                         animateable="0"
+                         default_values="1"
+                         label="Use Double Precision Mesh"
+                         panel_visibility="advanced">
+        <BooleanDomain name="bool" />
+        <Documentation>
+          Toggle whether to load mesh with double precision values or with floating values
+          If unchecked, mesh coordinates are store on 32 bit so it has lower memory footprint.
+          If checked, mesh coordinates are store on 64 bit so it has higher memory requirements.
+          Changing this property may impact the loading performance
+          since if the cgns file mesh precision and the wanted precision are different
+          conversion will occur
+        </Documentation>
+      </IntVectorProperty>
+
+      <IntVectorProperty name="CreateEachSolutionAsBlock"
+                         command="SetCreateEachSolutionAsBlock"
+                         number_of_elements="1"
+                         animateable="0"
+                         default_values="0"
+                         label="Each Solution As Block (Debug)"
+                         panel_visibility="advanced">
+        <BooleanDomain name="bool" />
+        <Documentation>
+          Toggle whether to load each Solution node under a zone separately.
+          This is intended only for debug purpose
+        </Documentation>
+      </IntVectorProperty>
+
       <!-- End CGNSReader -->
     </SourceProxy>
   </ProxyGroup>
@@ -129,7 +162,7 @@
                  file_name_method="SetFileName">
       <Documentation
          short_help="Read a dataset in CGNS format."
-         long_help="Read binary or ASCII files stored in CGNS format.">
+         long_help="Read binary files stored in CGNS format.">
         The CGNS reader reads binary files stored in CGNS format.
         The default file extension is .cgns. The output of this reader is
         a multi-block dataset.
@@ -164,7 +197,7 @@
       <SubProxy>
         <Proxy name="Reader"
                proxygroup="internal_sources"
-               proxyname="CGNSReader"> 
+               proxyname="CGNSReader">
         </Proxy>
         <ExposedProperties>
           <Property name="BaseInfo" />
@@ -174,6 +207,8 @@
           <Property name="PointArrayInfo" />
           <Property name="PointArrayStatus" />
           <Property name="LoadBndPatch" />
+          <Property name="DoublePrecisionMesh" />
+          <Property name="CreateEachSolutionAsBlock" />
         </ExposedProperties>
       </SubProxy>
 
@@ -186,7 +221,7 @@
           Available time step values.
         </Documentation>
       </DoubleVectorProperty>
- 
+
       <!-- End of CGNSSeriesReader -->
     </SourceProxy>
   </ProxyGroup>

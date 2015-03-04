@@ -29,11 +29,16 @@
 #include "vtkPVConfig.h"     // For PARAVIEW_USE_MPI
 
 #include <cgnslib.h> // DataType, and other definition
+#include <cgns_io.h> // Low level IO for fast parsing
 
 #include <vector>
 #include <map>
 #include <string>
 #include <string.h> // for inline strcmp
+#include <iostream>
+
+#include "vtkPoints.h"
+#include "vtkIdTypeArray.h"
 
 #ifdef PARAVIEW_USE_MPI
 #include "vtkMultiProcessController.h"
@@ -41,6 +46,22 @@
 
 namespace CGNSRead
 {
+
+namespace detail
+{
+  template <typename T>
+  struct is_double { static const bool value = false; };
+
+  template <>
+  struct is_double<double> { static const bool value = true; };
+
+  template <typename T>
+  struct is_float { static const bool value = false; };
+
+  template <>
+  struct is_float<float> { static const bool value = true; };
+}
+
 
 typedef char char_33[33];
 
@@ -242,10 +263,10 @@ public:
   // Description:
   // print object debugging purpose
   void PrintSelf(std::ostream& os);
-  
+
 #ifdef PARAVIEW_USE_MPI
   void Broadcast ( vtkMultiProcessController* controller, int rank );
-#endif  
+#endif
 
   // Description
   // Constructor/Destructor
@@ -314,6 +335,138 @@ inline bool isACGNSVariable(const std::vector<CGNSVariable>& varList,
 void fillVectorsFromVars(std::vector< CGNSRead::CGNSVariable >&  vars,
                             std::vector< CGNSRead::CGNSVector >& vectors,
                             const int physicalDim);
+//------------------------------------------------------------------------------
+int setUpRind(const int cgioNum, const double rindId, int *rind);
+//------------------------------------------------------------------------------
+int getFirstNodeId(const int cgioNum, const double parentId,
+                   const char *label, double *id);
+//------------------------------------------------------------------------------
+int get_section_connectivity(const int cgioNum, const double cgioSectionId,
+                             const int dim, const cgsize_t* srcStart,
+                             const cgsize_t* srcEnd, const cgsize_t* srcStride,
+                             const cgsize_t* memStart, const cgsize_t* memEnd,
+                             const cgsize_t* memStride, const cgsize_t* memDim,
+                             vtkIdType* localElements);
+//------------------------------------------------------------------------------
+int GetVTKElemType(CGNS_ENUMT(ElementType_t) elemType, bool &higherOrderWarning,
+                   bool &cgnsOrderFlag);
+//------------------------------------------------------------------------------
+void CGNS2VTKorder(const vtkIdType size, const int *cells_types,
+                   vtkIdType *elements);
+//------------------------------------------------------------------------------
+void CGNS2VTKorderMonoElem(const vtkIdType size, const int cell_type,
+                           vtkIdType *elements);
+//------------------------------------------------------------------------------
+template <typename T, typename Y>
+int get_XYZ_mesh(const int cgioNum, const std::vector<double>& gridChildId,
+                 const std::size_t& nCoordsArray, const int cellDim, const vtkIdType nPts,
+                 const cgsize_t* srcStart, const cgsize_t* srcEnd, const cgsize_t* srcStride,
+                 const cgsize_t* memStart, const cgsize_t* memEnd, const cgsize_t* memStride,
+                 const cgsize_t* memDims, vtkPoints* points)
+{
+  T *coords = static_cast<T * >(points->GetVoidPointer(0));
+  T *currentCoord = static_cast<T * >(&(coords[0]));
+
+  CGNSRead::char_33 coordName;
+  std::size_t len;
+  bool sameType = true;
+  double coordId;
+
+  memset(coords, 0, 3*nPts*sizeof(T));
+
+  for (std::size_t c = 1; c <= nCoordsArray; ++c)
+    {
+    // Read CoordName
+    if (cgio_get_name(cgioNum, gridChildId[c-1], coordName) != CG_OK)
+      {
+      char message[81];
+      cgio_error_message ( message );
+      std::cerr << "get_XYZ_mesh : cgio_get_name :" << message;
+      }
+
+    // Read node data type
+    CGNSRead::char_33 dataType;
+    if (cgio_get_data_type(cgioNum , gridChildId[c-1], dataType))
+      {
+      continue;
+      }
+
+    if (strcmp(dataType, "R8") == 0)
+      {
+      const bool doubleType = detail::is_double<T>::value;
+      sameType = doubleType;
+      }
+    else if (strcmp (dataType, "R4") == 0)
+      {
+      const bool floatType = detail::is_float<T>::value;
+      sameType = floatType;
+      }
+    else
+      {
+      std::cerr << "Invalid datatype for GridCoordinates\n";
+      continue;
+      }
+
+    // Determine direction X,Y,Z
+    len = strlen(coordName) - 1;
+    switch(coordName[len])
+      {
+      case 'X':
+        currentCoord = static_cast<T * >(&(coords[0]));
+        break;
+      case 'Y':
+        currentCoord = static_cast<T * >(&(coords[1]));
+        break;
+      case 'Z':
+        currentCoord = static_cast<T * >(&(coords[2]));
+        break;
+      }
+
+    coordId = gridChildId[c-1];
+
+    // quick transfer of data if same data types
+    if (sameType == true)
+      {
+      if (cgio_read_data(cgioNum, coordId,
+                         srcStart, srcEnd, srcStride, cellDim , memEnd,
+                         memStart, memEnd, memStride, (void *) currentCoord))
+        {
+        char message[81];
+        cgio_error_message ( message );
+        std::cerr << "cgio_read_data :" << message;
+        }
+      }
+    else
+      {
+      Y *dataArray = 0;
+      const cgsize_t memNoStride[3] = {1,1,1};
+
+      // need to read into temp array to convert data
+      dataArray = new Y[nPts];
+      if ( dataArray == 0 )
+        {
+        std::cerr << "Error allocating buffer array\n";
+        break;
+        }
+      if (cgio_read_data(cgioNum, coordId,
+                         srcStart, srcEnd, srcStride, cellDim, memDims,
+                         memStart, memDims, memNoStride, (void *) dataArray))
+        {
+        delete [] dataArray;
+        char message[81];
+        cgio_error_message ( message );
+        std::cerr << "Buffer array cgio_read_data :" << message;
+        break;
+        }
+      for (vtkIdType ii = 0; ii < nPts; ++ii)
+        {
+        currentCoord[memStride[0]*ii] = static_cast<T>(dataArray[ii]);
+        }
+      delete [] dataArray;
+      }
+    }
+  return 0;
+}
 
 }
 
